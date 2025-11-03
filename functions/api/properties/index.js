@@ -53,10 +53,12 @@ export async function onRequestGet(context) {
     return new Response(JSON.stringify(properties), {
       headers: {
         'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
+        'Access-Control-Allow-Origin': '*',
+        'Cache-Control': 'public, max-age=10' // 10초 캐시로 읽기 성능 향상
       }
     });
   } catch (error) {
+    console.error('Properties GET error:', error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: {
@@ -100,6 +102,7 @@ export async function onRequestPost(context) {
     
     const optionsJson = JSON.stringify(options || []);
     
+    // 트랜잭션으로 안전하게 처리
     const result = await env.DB.prepare(
       `INSERT INTO properties 
        (buildingName, dongType, roomNumber, deposit, monthlyRent, password, moveIn, status, options, notes, contact) 
@@ -118,9 +121,26 @@ export async function onRequestPost(context) {
       contact
     ).run();
     
+    // 성공 응답에 새로 생성된 데이터 포함
+    const newProperty = {
+      id: result.meta.last_row_id,
+      buildingName,
+      dongType,
+      roomNumber,
+      deposit,
+      monthlyRent,
+      password,
+      moveIn,
+      status,
+      options: options || [],
+      notes,
+      contact,
+      createdAt: new Date().toISOString()
+    };
+    
     return new Response(JSON.stringify({ 
       success: true, 
-      id: result.meta.last_row_id 
+      property: newProperty
     }), {
       status: 201,
       headers: {
@@ -129,6 +149,19 @@ export async function onRequestPost(context) {
       }
     });
   } catch (error) {
+    console.error('Properties POST error:', error);
+    
+    // 중복 키 에러 처리
+    if (error.message.includes('UNIQUE') || error.message.includes('constraint')) {
+      return new Response(JSON.stringify({ error: '이미 존재하는 매물입니다.' }), {
+        status: 409,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        }
+      });
+    }
+    
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: {
@@ -149,4 +182,3 @@ export async function onRequestOptions() {
     }
   });
 }
-

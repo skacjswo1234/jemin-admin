@@ -44,8 +44,32 @@ function saveToStorage() {
     localStorage.setItem('properties', JSON.stringify(properties));
 }
 
+// 로그인 체크
+function checkLogin() {
+    const adminUser = localStorage.getItem('adminUser');
+    if (!adminUser) {
+        window.location.href = 'login.html';
+        return false;
+    }
+    return true;
+}
+
+// 로그아웃
+function logout() {
+    if (confirm('로그아웃 하시겠습니까?')) {
+        localStorage.removeItem('adminUser');
+        window.location.href = 'login.html';
+    }
+}
+
 // 페이지 로드시 초기화
 document.addEventListener('DOMContentLoaded', function() {
+    if (!checkLogin()) return;
+    
+    // 사용자 이름 표시
+    const adminUser = localStorage.getItem('adminUser');
+    document.querySelector('.user-profile span').textContent = adminUser;
+    
     loadFromAPI();
     initializeEventListeners();
 });
@@ -110,6 +134,24 @@ function initializeEventListeners() {
         e.preventDefault();
         addProperty();
     });
+
+    // 비밀번호 변경 폼
+    const changePasswordForm = document.getElementById('changePasswordForm');
+    if (changePasswordForm) {
+        changePasswordForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            changePassword();
+        });
+    }
+
+    // 계정 추가 폼
+    const addAccountForm = document.getElementById('addAccountForm');
+    if (addAccountForm) {
+        addAccountForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            addAccount();
+        });
+    }
 
     // 검색
     const searchInput = document.getElementById('searchInput');
@@ -228,6 +270,11 @@ function switchTab(tabName) {
     // 통계 탭일 경우 차트 렌더링
     if (tabName === 'stats') {
         renderStats();
+    }
+
+    // 계정 관리 탭일 경우 계정 목록 로드
+    if (tabName === 'account') {
+        loadAccounts();
     }
 }
 
@@ -759,6 +806,132 @@ function getStatusClass(status) {
         case '계약대기': return 'reserved';
         case '임대중': return 'sold';
         default: return '';
+    }
+}
+
+// 비밀번호 변경
+async function changePassword() {
+    const currentPassword = document.getElementById('currentPassword').value;
+    const newPassword = document.getElementById('newPassword').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+    const adminUser = localStorage.getItem('adminUser');
+
+    if (newPassword !== confirmPassword) {
+        showNotification('새 비밀번호가 일치하지 않습니다.', 'error');
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/auth/change-password`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                username: adminUser,
+                currentPassword,
+                newPassword
+            })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || '비밀번호 변경에 실패했습니다.');
+        }
+
+        showNotification('비밀번호가 성공적으로 변경되었습니다.', 'success');
+        document.getElementById('changePasswordForm').reset();
+    } catch (error) {
+        console.error('비밀번호 변경 오류:', error);
+        showNotification(error.message, 'error');
+    }
+}
+
+// 계정 추가
+async function addAccount() {
+    const username = document.getElementById('newUsername').value;
+    const password = document.getElementById('newAccountPassword').value;
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/auth/accounts`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ username, password })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || '계정 추가에 실패했습니다.');
+        }
+
+        showNotification('계정이 성공적으로 추가되었습니다.', 'success');
+        document.getElementById('addAccountForm').reset();
+        loadAccounts();
+    } catch (error) {
+        console.error('계정 추가 오류:', error);
+        showNotification(error.message, 'error');
+    }
+}
+
+// 계정 목록 로드
+async function loadAccounts() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/auth/accounts`);
+        if (!response.ok) throw new Error('계정 목록 로드 실패');
+        
+        const accounts = await response.json();
+        const tbody = document.getElementById('accountsTableBody');
+        const currentUser = localStorage.getItem('adminUser');
+
+        if (accounts.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" class="empty-row">등록된 계정이 없습니다.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = accounts.map((account, index) => `
+            <tr>
+                <td>${index + 1}</td>
+                <td>${account.username}${account.username === currentUser ? ' <span style="color: var(--primary-color);">(현재 로그인)</span>' : ''}</td>
+                <td>${formatDate(account.createdAt)}</td>
+                <td>
+                    ${account.username !== currentUser ? `
+                    <button class="action-btn delete" onclick="deleteAccount('${account.username}')" title="삭제">
+                        <i class="fas fa-trash"></i> 삭제
+                    </button>
+                    ` : '<span style="color: var(--text-secondary);">-</span>'}
+                </td>
+            </tr>
+        `).join('');
+    } catch (error) {
+        console.error('계정 목록 로드 오류:', error);
+        showNotification('계정 목록을 불러오는데 실패했습니다.', 'error');
+    }
+}
+
+// 계정 삭제
+async function deleteAccount(username) {
+    if (!confirm(`계정 "${username}"을(를) 삭제하시겠습니까?`)) return;
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/auth/accounts?username=${encodeURIComponent(username)}`, {
+            method: 'DELETE'
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || '계정 삭제에 실패했습니다.');
+        }
+
+        showNotification('계정이 삭제되었습니다.', 'success');
+        loadAccounts();
+    } catch (error) {
+        console.error('계정 삭제 오류:', error);
+        showNotification(error.message, 'error');
     }
 }
 

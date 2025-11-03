@@ -1,3 +1,13 @@
+-- 관리자 계정 테이블 생성
+DROP TABLE IF EXISTS admins;
+
+CREATE TABLE admins (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT NOT NULL UNIQUE,
+    password TEXT NOT NULL,
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
 -- 매물 관리 테이블 생성
 DROP TABLE IF EXISTS properties;
 
@@ -17,7 +27,21 @@ CREATE TABLE properties (
     createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 관리자 계정 샘플 데이터 삽입 (비밀번호: 1234)
+INSERT INTO admins (username, password) VALUES 
+    ('admin_1', '1234'),
+    ('admin_2', '1234'),
+    ('admin_3', '1234'),
+    ('admin_4', '1234'),
+    ('admin_5', '1234'),
+    ('admin_6', '1234'),
+    ('admin_7', '1234'),
+    ('admin_8', '1234'),
+    ('admin_9', '1234'),
+    ('admin_10', '1234');
+
 -- 인덱스 생성
+CREATE INDEX idx_username ON admins(username);
 CREATE INDEX idx_buildingName ON properties(buildingName);
 CREATE INDEX idx_status ON properties(status);
 CREATE INDEX idx_createdAt ON properties(createdAt DESC);
