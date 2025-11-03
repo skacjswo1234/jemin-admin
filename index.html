@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>부동산 매물관리 시스템</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- 헤더 -->
+    <header class="header">
+        <div class="header-left">
+            <button class="sidebar-toggle" id="sidebarToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+            <div class="logo">
+                <img src="images/logo.png" alt="로고">
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="notification">
+                <i class="fas fa-bell"></i>
+                <span class="badge">3</span>
+            </div>
+            <div class="user-profile">
+                <div class="user-avatar">
+                    <i class="fas fa-user-circle"></i>
+                </div>
+                <span>관리자</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- 사이드바 -->
+    <aside class="sidebar" id="sidebar">
+        <nav class="sidebar-nav">
+            <ul>
+                <li class="nav-item active">
+                    <a href="#" data-tab="dashboard">
+                        <i class="fas fa-home"></i>
+                        <span>대시보드</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" data-tab="register">
+                        <i class="fas fa-plus-circle"></i>
+                        <span>매물 등록</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" data-tab="list">
+                        <i class="fas fa-list"></i>
+                        <span>매물 리스트</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" data-tab="stats">
+                        <i class="fas fa-chart-line"></i>
+                        <span>통계</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </aside>
+
+    <!-- 메인 콘텐츠 -->
+    <main class="main-content">
+        <!-- 대시보드 탭 -->
+        <section class="content-tab active" id="dashboard">
+            <div class="page-header">
+                <h2>대시보드</h2>
+                <p>부동산 매물 관리 현황</p>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon blue">
+                        <i class="fas fa-building"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>전체 매물</h3>
+                        <p class="stat-number" id="totalProperties">0</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon green">
+                        <i class="fas fa-door-open"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>공실</h3>
+                        <p class="stat-number" id="activeProperties">0</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon orange">
+                        <i class="fas fa-home"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>임대중</h3>
+                        <p class="stat-number" id="soldProperties">0</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon red">
+                        <i class="fas fa-won-sign"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>월세 수익</h3>
+                        <p class="stat-number" id="totalRevenue">0만원</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dashboard-grid">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>최근 등록 매물</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="recent-properties" id="recentProperties">
+                            <p class="empty-message">등록된 매물이 없습니다.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 매물 등록 탭 -->
+        <section class="content-tab" id="register">
+            <div class="page-header">
+                <h2>매물 등록</h2>
+                <p>새로운 매물 정보를 등록합니다</p>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <form id="propertyForm">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="buildingName">건물명</label>
+                                <input type="text" id="buildingName" placeholder="예: 강남타워" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="roomNumber">호수</label>
+                                <input type="text" id="roomNumber" placeholder="예: 1503" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="deposit">보증금 (만원)</label>
+                                <input type="number" id="deposit" placeholder="예: 5000" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="monthlyRent">월세 (만원)</label>
+                                <input type="number" id="monthlyRent" placeholder="예: 50" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="password">비밀번호</label>
+                                <input type="text" id="password" placeholder="출입문 비밀번호">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="moveIn">전입유무</label>
+                                <select id="moveIn" required>
+                                    <option value="전입">전입</option>
+                                    <option value="미전입">미전입</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="status">상태</label>
+                                <select id="status" required>
+                                    <option value="공실">공실</option>
+                                    <option value="임대중">임대중</option>
+                                    <option value="계약대기">계약대기</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="contact">연락처</label>
+                                <input type="tel" id="contact" placeholder="예: 010-1234-5678" required>
+                            </div>
+
+                            <div class="form-group full-width">
+                                <label for="options">옵션</label>
+                                <div class="checkbox-group">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" name="option" value="에어컨"> 에어컨
+                                    </label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" name="option" value="냉장고"> 냉장고
+                                    </label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" name="option" value="세탁기"> 세탁기
+                                    </label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" name="option" value="전자레인지"> 전자레인지
+                                    </label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" name="option" value="가스레인지"> 가스레인지
+                                    </label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" name="option" value="침대"> 침대
+                                    </label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" name="option" value="책상"> 책상
+                                    </label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" name="option" value="옷장"> 옷장
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="form-group full-width">
+                                <label for="notes">특이사항</label>
+                                <textarea id="notes" rows="4" placeholder="특이사항을 입력하세요"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> 등록하기
+                            </button>
+                            <button type="reset" class="btn btn-secondary">
+                                <i class="fas fa-redo"></i> 초기화
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <!-- 매물 리스트 탭 -->
+        <section class="content-tab" id="list">
+            <div class="page-header">
+                <h2>매물 리스트</h2>
+                <p>등록된 모든 매물을 조회합니다</p>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="searchInput" placeholder="매물 검색...">
+                    </div>
+                    <div class="filter-box">
+                        <select id="filterMoveIn">
+                            <option value="">전체 전입</option>
+                            <option value="전입">전입</option>
+                            <option value="미전입">미전입</option>
+                        </select>
+                        <select id="filterStatus">
+                            <option value="">전체 상태</option>
+                            <option value="공실">공실</option>
+                            <option value="임대중">임대중</option>
+                            <option value="계약대기">계약대기</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- 데스크톱 테이블 뷰 -->
+                    <div class="table-responsive desktop-view">
+                        <table class="properties-table">
+                            <thead>
+                                <tr>
+                                    <th>번호</th>
+                                    <th>건물명</th>
+                                    <th>호수</th>
+                                    <th>보증금</th>
+                                    <th>월세</th>
+                                    <th>전입유무</th>
+                                    <th>상태</th>
+                                    <th>연락처</th>
+                                    <th>등록일</th>
+                                    <th>관리</th>
+                                </tr>
+                            </thead>
+                            <tbody id="propertiesTableBody">
+                                <tr>
+                                    <td colspan="10" class="empty-row">등록된 매물이 없습니다.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <!-- 모바일 카드 뷰 -->
+                    <div class="properties-cards mobile-view" id="propertiesCards">
+                        <div class="empty-message">등록된 매물이 없습니다.</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 통계 탭 -->
+        <section class="content-tab" id="stats">
+            <div class="page-header">
+                <h2>통계</h2>
+                <p>매물 거래 통계를 확인합니다</p>
+            </div>
+
+            <!-- 요약 통계 카드 -->
+            <div class="summary-stats" id="summaryStats">
+                <!-- 동적으로 생성됨 -->
+            </div>
+
+            <!-- 차트 그리드 -->
+            <div class="charts-grid">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>전입유무별 현황</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="donut-chart-container" id="moveInChart">
+                            <p class="empty-message">데이터가 없습니다.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3>상태별 현황</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="donut-chart-container" id="statusChart">
+                            <p class="empty-message">데이터가 없습니다.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 상세 통계 테이블 -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>상세 통계</h3>
+                </div>
+                <div class="card-body">
+                    <div class="detail-stats" id="detailStats">
+                        <!-- 동적으로 생성됨 -->
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 모달 (상세보기/수정) -->
+    <div class="modal" id="propertyModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>매물 상세 정보</h3>
+                <button class="modal-close" onclick="closeModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- 동적으로 채워짐 -->
+            </div>
+        </div>
+    </div>
+
+    <script src="js/script.js"></script>
+</body>
+</html>
+
