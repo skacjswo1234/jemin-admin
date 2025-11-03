@@ -1,44 +1,52 @@
 // 전역 변수
 let properties = [];
 
-// 로컬 스토리지에서 데이터 로드
+// API 기본 URL (로컬 개발시: 빈 문자열, 프로덕션: Cloudflare Pages URL)
+const API_BASE_URL = '';
+
+// 건물별 동/타입 정의
+const buildingDongTypes = {
+    '타워더모스트': ['A타입', 'B타입', 'C타입', 'D타입'],
+    '해링턴타워': ['101동', '102동', '103동'],
+    'KCC하버뷰': ['101동', '102동', '원룸형(도생)', '원룸형(오피)']
+};
+
+// API에서 데이터 로드
+async function loadFromAPI() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/properties`);
+        if (!response.ok) throw new Error('데이터 로드 실패');
+        properties = await response.json();
+        updateDashboard();
+        updateBuildingFilter();
+        renderPropertiesList();
+        renderStats();
+    } catch (error) {
+        console.error('데이터 로드 오류:', error);
+        showNotification('데이터를 불러오는데 실패했습니다.', 'error');
+    }
+}
+
+// 로컬 스토리지에서 데이터 로드 (백업용)
 function loadFromStorage() {
     const stored = localStorage.getItem('properties');
     if (stored) {
         properties = JSON.parse(stored);
-    } else {
-        // 더미 데이터 추가 (최초 실행시)
-        properties = [
-            {
-                id: Date.now(),
-                buildingName: '강남타워',
-                roomNumber: '1503',
-                deposit: 5000,
-                monthlyRent: 50,
-                password: '1234#',
-                moveIn: '전입',
-                status: '임대중',
-                options: ['에어컨', '냉장고', '세탁기', '침대'],
-                notes: '깨끗하게 관리되고 있습니다. 역 근처 편리한 위치.',
-                contact: '010-1234-5678',
-                createdAt: new Date().toISOString()
-            }
-        ];
-        saveToStorage();
     }
     updateDashboard();
+    updateBuildingFilter();
     renderPropertiesList();
     renderStats();
 }
 
-// 로컬 스토리지에 저장
+// 로컬 스토리지에 저장 (백업용)
 function saveToStorage() {
     localStorage.setItem('properties', JSON.stringify(properties));
 }
 
 // 페이지 로드시 초기화
 document.addEventListener('DOMContentLoaded', function() {
-    loadFromStorage();
+    loadFromAPI();
     initializeEventListeners();
 });
 
@@ -112,8 +120,99 @@ function initializeEventListeners() {
     // 필터
     const filterMoveIn = document.getElementById('filterMoveIn');
     const filterStatus = document.getElementById('filterStatus');
+    const filterDongType = document.getElementById('filterDongType');
     filterMoveIn.addEventListener('change', renderPropertiesList);
     filterStatus.addEventListener('change', renderPropertiesList);
+    filterDongType.addEventListener('change', renderPropertiesList);
+}
+
+// 풀옵션 토글 함수
+function toggleFullOption() {
+    const fullOptionCheckbox = document.getElementById('fullOption');
+    const optionCheckboxes = document.querySelectorAll('input[name="option"]');
+    
+    optionCheckboxes.forEach(checkbox => {
+        checkbox.checked = fullOptionCheckbox.checked;
+    });
+}
+
+// 등록 폼: 건물 선택 시 동/타입 옵션 업데이트
+function updateDongTypeOptions() {
+    const buildingSelect = document.getElementById('buildingName');
+    const dongTypeSelect = document.getElementById('dongType');
+    const selectedBuilding = buildingSelect.value;
+    
+    dongTypeSelect.innerHTML = '<option value="">동/타입 선택</option>';
+    
+    if (selectedBuilding && buildingDongTypes[selectedBuilding]) {
+        dongTypeSelect.disabled = false;
+        buildingDongTypes[selectedBuilding].forEach(dongType => {
+            const option = document.createElement('option');
+            option.value = dongType;
+            option.textContent = dongType;
+            dongTypeSelect.appendChild(option);
+        });
+    } else {
+        dongTypeSelect.disabled = true;
+        dongTypeSelect.innerHTML = '<option value="">건물을 먼저 선택하세요</option>';
+    }
+}
+
+// 리스트 필터: 건물 선택 시 동/타입 필터 업데이트
+function onBuildingChange() {
+    const filterBuilding = document.getElementById('filterBuilding');
+    const filterDongType = document.getElementById('filterDongType');
+    const selectedBuilding = filterBuilding.value;
+    
+    filterDongType.innerHTML = '<option value="">전체 동/타입</option>';
+    
+    if (!selectedBuilding) {
+        filterDongType.style.display = 'none';
+        renderPropertiesList();
+        return;
+    }
+    
+    // 선택된 건물의 실제 등록된 동/타입만 표시
+    const dongTypes = new Set();
+    properties.forEach(property => {
+        if (property.buildingName === selectedBuilding && property.dongType) {
+            dongTypes.add(property.dongType);
+        }
+    });
+    
+    if (dongTypes.size > 0) {
+        filterDongType.style.display = 'block';
+        Array.from(dongTypes).sort().forEach(dongType => {
+            const option = document.createElement('option');
+            option.value = dongType;
+            option.textContent = dongType;
+            filterDongType.appendChild(option);
+        });
+    } else {
+        filterDongType.style.display = 'none';
+    }
+    
+    renderPropertiesList();
+}
+
+// 건물 필터 업데이트
+function updateBuildingFilter() {
+    const filterBuilding = document.getElementById('filterBuilding');
+    const buildings = new Set();
+    
+    properties.forEach(property => {
+        if (property.buildingName) {
+            buildings.add(property.buildingName);
+        }
+    });
+    
+    filterBuilding.innerHTML = '<option value="">전체 건물</option>';
+    Array.from(buildings).sort().forEach(building => {
+        const option = document.createElement('option');
+        option.value = building;
+        option.textContent = building;
+        filterBuilding.appendChild(option);
+    });
 }
 
 // 탭 전환
@@ -133,14 +232,14 @@ function switchTab(tabName) {
 }
 
 // 매물 추가
-function addProperty() {
+async function addProperty() {
     // 옵션 체크박스 값 가져오기
     const optionCheckboxes = document.querySelectorAll('input[name="option"]:checked');
     const options = Array.from(optionCheckboxes).map(cb => cb.value);
 
     const property = {
-        id: Date.now(),
         buildingName: document.getElementById('buildingName').value,
+        dongType: document.getElementById('dongType').value,
         roomNumber: document.getElementById('roomNumber').value,
         deposit: parseInt(document.getElementById('deposit').value),
         monthlyRent: parseInt(document.getElementById('monthlyRent').value),
@@ -149,29 +248,44 @@ function addProperty() {
         status: document.getElementById('status').value,
         options: options,
         notes: document.getElementById('notes').value,
-        contact: document.getElementById('contact').value,
-        createdAt: new Date().toISOString()
+        contact: document.getElementById('contact').value
     };
 
-    properties.push(property);
-    saveToStorage();
-    updateDashboard();
-    renderPropertiesList();
-
-    // 폼 초기화 및 리스트 탭으로 이동
-    document.getElementById('propertyForm').reset();
-    showNotification('매물이 성공적으로 등록되었습니다!', 'success');
-    
-    // 리스트 탭으로 자동 전환
-    setTimeout(() => {
-        switchTab('list');
-        document.querySelectorAll('.nav-item').forEach(item => {
-            item.classList.remove('active');
-            if (item.querySelector('[data-tab="list"]')) {
-                item.classList.add('active');
-            }
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/properties`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(property)
         });
-    }, 1000);
+
+        if (!response.ok) throw new Error('매물 등록 실패');
+
+        // 폼 초기화
+        document.getElementById('propertyForm').reset();
+        document.getElementById('dongType').disabled = true;
+        document.getElementById('dongType').innerHTML = '<option value="">건물을 먼저 선택하세요</option>';
+        
+        showNotification('매물이 성공적으로 등록되었습니다!', 'success');
+        
+        // 데이터 다시 로드
+        await loadFromAPI();
+        
+        // 리스트 탭으로 자동 전환
+        setTimeout(() => {
+            switchTab('list');
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+                if (item.querySelector('[data-tab="list"]')) {
+                    item.classList.add('active');
+                }
+            });
+        }, 1000);
+    } catch (error) {
+        console.error('매물 등록 오류:', error);
+        showNotification('매물 등록에 실패했습니다.', 'error');
+    }
 }
 
 // 대시보드 업데이트
@@ -210,36 +324,47 @@ function updateDashboard() {
 // 매물 리스트 렌더링
 function renderPropertiesList() {
     const searchInput = document.getElementById('searchInput');
+    const filterBuilding = document.getElementById('filterBuilding');
+    const filterDongType = document.getElementById('filterDongType');
     const filterMoveIn = document.getElementById('filterMoveIn');
     const filterStatus = document.getElementById('filterStatus');
     
     if (!searchInput || !filterMoveIn || !filterStatus) return;
     
     const searchTerm = searchInput.value.toLowerCase();
+    const filterBuildingValue = filterBuilding.value;
+    const filterDongTypeValue = filterDongType.value;
     const filterMoveInValue = filterMoveIn.value;
     const filterStatusValue = filterStatus.value;
 
     let filtered = properties.filter(property => {
         const buildingName = property.buildingName || '';
         const roomNumber = property.roomNumber || '';
+        const dongType = property.dongType || '';
+        
         const matchesSearch = buildingName.toLowerCase().includes(searchTerm) ||
-                            roomNumber.toLowerCase().includes(searchTerm);
+                            roomNumber.toLowerCase().includes(searchTerm) ||
+                            dongType.toLowerCase().includes(searchTerm);
+        
+        const matchesBuilding = !filterBuildingValue || property.buildingName === filterBuildingValue;
+        const matchesDongType = !filterDongTypeValue || property.dongType === filterDongTypeValue;
         const matchesMoveIn = !filterMoveInValue || property.moveIn === filterMoveInValue;
         const matchesStatus = !filterStatusValue || property.status === filterStatusValue;
 
-        return matchesSearch && matchesMoveIn && matchesStatus;
+        return matchesSearch && matchesBuilding && matchesDongType && matchesMoveIn && matchesStatus;
     });
 
     // 데스크톱 테이블 뷰 렌더링
     const tbody = document.getElementById('propertiesTableBody');
 
     if (filtered.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="10" class="empty-row">매물이 없습니다.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="11" class="empty-row">매물이 없습니다.</td></tr>';
     } else {
         tbody.innerHTML = filtered.map((property, index) => `
             <tr>
                 <td>${index + 1}</td>
                 <td>${property.buildingName || '미등록'}</td>
+                <td>${property.dongType || '-'}</td>
                 <td>${property.roomNumber || '-'}호</td>
                 <td>${(property.deposit || 0).toLocaleString()}만</td>
                 <td>${(property.monthlyRent || 0).toLocaleString()}만</td>
@@ -271,7 +396,7 @@ function renderPropertiesList() {
             <div class="property-card">
                 <div class="property-card-header">
                     <div class="property-card-title">
-                        <h4>${property.buildingName || '미등록'} ${property.roomNumber || ''}호</h4>
+                        <h4>${property.buildingName || '미등록'} ${property.dongType || ''} ${property.roomNumber || ''}호</h4>
                         <p>${property.contact || '-'}</p>
                     </div>
                     <div class="property-card-price">${(property.deposit || 0).toLocaleString()}/${(property.monthlyRent || 0).toLocaleString()}</div>
@@ -505,6 +630,10 @@ function viewProperty(id) {
                 <span class="modal-detail-value">${property.buildingName || '미등록'}</span>
             </div>
             <div class="modal-detail-item">
+                <span class="modal-detail-label">동/타입:</span>
+                <span class="modal-detail-value">${property.dongType || '-'}</span>
+            </div>
+            <div class="modal-detail-item">
                 <span class="modal-detail-label">호수:</span>
                 <span class="modal-detail-value">${property.roomNumber || '-'}호</span>
             </div>
@@ -569,14 +698,23 @@ window.addEventListener('click', function(e) {
 });
 
 // 매물 삭제
-function deleteProperty(id) {
-    if (confirm('정말로 이 매물을 삭제하시겠습니까?')) {
-        properties = properties.filter(p => p.id !== id);
-        saveToStorage();
-        updateDashboard();
-        renderPropertiesList();
-        renderStats();
+async function deleteProperty(id) {
+    if (!confirm('정말로 이 매물을 삭제하시겠습니까?')) return;
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/properties/${id}`, {
+            method: 'DELETE'
+        });
+
+        if (!response.ok) throw new Error('매물 삭제 실패');
+
         showNotification('매물이 삭제되었습니다.', 'error');
+        
+        // 데이터 다시 로드
+        await loadFromAPI();
+    } catch (error) {
+        console.error('매물 삭제 오류:', error);
+        showNotification('매물 삭제에 실패했습니다.', 'error');
     }
 }
 

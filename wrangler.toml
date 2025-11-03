@@ -1,0 +1,10 @@
+name = "jemin-admin"
+compatibility_date = "2024-01-01"
+
+pages_build_output_dir = "."
+
+[[d1_databases]]
+binding = "DB"
+database_name = "jemin-db"
+database_id = "2de50dc3-45d2-444a-bff6-d18d4e47c8e8"
+
