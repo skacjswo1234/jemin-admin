@@ -31,7 +31,8 @@ export async function onRequestPost(context) {
     
     return new Response(JSON.stringify({ 
       success: true,
-      username: results[0].username
+      username: results[0].username,
+      name: results[0].name
     }), {
       headers: {
         'Content-Type': 'application/json',

@@ -5,6 +5,7 @@ CREATE TABLE admins (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT NOT NULL UNIQUE,
     password TEXT NOT NULL,
+    name TEXT NOT NULL,
     createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -28,17 +29,17 @@ CREATE TABLE properties (
 );
 
 -- 관리자 계정 샘플 데이터 삽입 (비밀번호: 1234)
-INSERT INTO admins (username, password) VALUES 
-    ('admin_1', '1234'),
-    ('admin_2', '1234'),
-    ('admin_3', '1234'),
-    ('admin_4', '1234'),
-    ('admin_5', '1234'),
-    ('admin_6', '1234'),
-    ('admin_7', '1234'),
-    ('admin_8', '1234'),
-    ('admin_9', '1234'),
-    ('admin_10', '1234');
+INSERT INTO admins (username, password, name) VALUES 
+    ('admin_1', '1234', '관리자1'),
+    ('admin_2', '1234', '관리자2'),
+    ('admin_3', '1234', '관리자3'),
+    ('admin_4', '1234', '관리자4'),
+    ('admin_5', '1234', '관리자5'),
+    ('admin_6', '1234', '관리자6'),
+    ('admin_7', '1234', '관리자7'),
+    ('admin_8', '1234', '관리자8'),
+    ('admin_9', '1234', '관리자9'),
+    ('admin_10', '1234', '관리자10');
 
 -- 인덱스 생성
 CREATE INDEX idx_username ON admins(username);

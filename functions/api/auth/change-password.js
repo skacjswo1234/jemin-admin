@@ -1,11 +1,11 @@
-// POST: 비밀번호 변경
+// POST: 비밀번호 및 성명 변경
 export async function onRequestPost(context) {
   try {
     const { env, request } = context;
-    const { username, currentPassword, newPassword } = await request.json();
+    const { username, currentPassword, newPassword, name } = await request.json();
     
-    if (!username || !currentPassword || !newPassword) {
-      return new Response(JSON.stringify({ error: '모든 필드를 입력하세요.' }), {
+    if (!username || !currentPassword) {
+      return new Response(JSON.stringify({ error: '아이디와 현재 비밀번호를 입력하세요.' }), {
         status: 400,
         headers: {
           'Content-Type': 'application/json',
@@ -14,7 +14,8 @@ export async function onRequestPost(context) {
       });
     }
     
-    if (newPassword.length < 4) {
+    // 새 비밀번호가 있는 경우 길이 체크
+    if (newPassword && newPassword.length < 4) {
       return new Response(JSON.stringify({ error: '새 비밀번호는 4자 이상이어야 합니다.' }), {
         status: 400,
         headers: {
@@ -39,14 +40,46 @@ export async function onRequestPost(context) {
       });
     }
     
-    // 비밀번호 업데이트
-    await env.DB.prepare(
-      'UPDATE admins SET password = ? WHERE username = ?'
-    ).bind(newPassword, username).run();
+    // 업데이트할 필드 결정
+    let updateQuery = 'UPDATE admins SET ';
+    let params = [];
+    let updates = [];
+    
+    if (name) {
+      updates.push('name = ?');
+      params.push(name);
+    }
+    
+    if (newPassword) {
+      updates.push('password = ?');
+      params.push(newPassword);
+    }
+    
+    if (updates.length === 0) {
+      return new Response(JSON.stringify({ error: '변경할 내용이 없습니다.' }), {
+        status: 400,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        }
+      });
+    }
+    
+    updateQuery += updates.join(', ') + ' WHERE username = ?';
+    params.push(username);
+    
+    // 정보 업데이트
+    await env.DB.prepare(updateQuery).bind(...params).run();
+    
+    // 변경된 정보 조회
+    const { results: updatedResults } = await env.DB.prepare(
+      'SELECT username, name FROM admins WHERE username = ?'
+    ).bind(username).all();
     
     return new Response(JSON.stringify({ 
       success: true,
-      message: '비밀번호가 성공적으로 변경되었습니다.'
+      name: updatedResults[0].name,
+      message: '정보가 성공적으로 변경되었습니다.'
     }), {
       headers: {
         'Content-Type': 'application/json',

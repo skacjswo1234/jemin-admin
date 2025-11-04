@@ -4,7 +4,7 @@ export async function onRequestGet(context) {
     const { env } = context;
     
     const { results } = await env.DB.prepare(
-      'SELECT id, username, createdAt FROM admins ORDER BY id'
+      'SELECT id, username, name, createdAt FROM admins ORDER BY id'
     ).all();
     
     return new Response(JSON.stringify(results), {
@@ -29,10 +29,10 @@ export async function onRequestGet(context) {
 export async function onRequestPost(context) {
   try {
     const { env, request } = context;
-    const { username, password } = await request.json();
+    const { username, password, name } = await request.json();
     
-    if (!username || !password) {
-      return new Response(JSON.stringify({ error: '아이디와 비밀번호를 입력하세요.' }), {
+    if (!username || !password || !name) {
+      return new Response(JSON.stringify({ error: '아이디, 비밀번호, 성명을 모두 입력하세요.' }), {
         status: 400,
         headers: {
           'Content-Type': 'application/json',
@@ -68,8 +68,8 @@ export async function onRequestPost(context) {
     
     // 계정 추가
     const result = await env.DB.prepare(
-      'INSERT INTO admins (username, password) VALUES (?, ?)'
-    ).bind(username, password).run();
+      'INSERT INTO admins (username, password, name) VALUES (?, ?, ?)'
+    ).bind(username, password, name).run();
     
     return new Response(JSON.stringify({ 
       success: true,

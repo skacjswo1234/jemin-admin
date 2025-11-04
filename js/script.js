@@ -58,6 +58,7 @@ function checkLogin() {
 function logout() {
     if (confirm('로그아웃 하시겠습니까?')) {
         localStorage.removeItem('adminUser');
+        localStorage.removeItem('adminName');
         window.location.href = 'login.html';
     }
 }
@@ -66,9 +67,10 @@ function logout() {
 document.addEventListener('DOMContentLoaded', function() {
     if (!checkLogin()) return;
     
-    // 사용자 이름 표시
+    // 사용자 성명 표시
+    const adminName = localStorage.getItem('adminName');
     const adminUser = localStorage.getItem('adminUser');
-    document.querySelector('.user-profile span').textContent = adminUser;
+    document.getElementById('adminName').textContent = adminName || adminUser;
     
     loadFromAPI();
     initializeEventListeners();
@@ -272,9 +274,15 @@ function switchTab(tabName) {
         renderStats();
     }
 
-    // 계정 관리 탭일 경우 계정 목록 로드
+    // 계정 관리 탭일 경우 계정 목록 로드 및 성명 초기화
     if (tabName === 'account') {
         loadAccounts();
+        // 성명 필드에 현재 사용자 성명 채우기
+        const adminName = localStorage.getItem('adminName');
+        const nameField = document.getElementById('updateName');
+        if (nameField && adminName) {
+            nameField.value = adminName;
+        }
     }
 }
 
@@ -809,14 +817,16 @@ function getStatusClass(status) {
     }
 }
 
-// 비밀번호 변경
+// 정보 변경 (비밀번호 및 성명)
 async function changePassword() {
     const currentPassword = document.getElementById('currentPassword').value;
     const newPassword = document.getElementById('newPassword').value;
     const confirmPassword = document.getElementById('confirmPassword').value;
+    const name = document.getElementById('updateName').value;
     const adminUser = localStorage.getItem('adminUser');
 
-    if (newPassword !== confirmPassword) {
+    // 새 비밀번호가 입력된 경우에만 확인 체크
+    if (newPassword && newPassword !== confirmPassword) {
         showNotification('새 비밀번호가 일치하지 않습니다.', 'error');
         return;
     }
@@ -830,20 +840,30 @@ async function changePassword() {
             body: JSON.stringify({
                 username: adminUser,
                 currentPassword,
-                newPassword
+                newPassword: newPassword || null,
+                name: name || null
             })
         });
 
         const data = await response.json();
 
         if (!response.ok) {
-            throw new Error(data.error || '비밀번호 변경에 실패했습니다.');
+            throw new Error(data.error || '정보 변경에 실패했습니다.');
         }
 
-        showNotification('비밀번호가 성공적으로 변경되었습니다.', 'success');
+        // 성명이 변경된 경우 로컬스토리지 및 UI 업데이트
+        if (data.name) {
+            localStorage.setItem('adminName', data.name);
+            document.getElementById('adminName').textContent = data.name;
+        }
+
+        showNotification('정보가 성공적으로 변경되었습니다.', 'success');
         document.getElementById('changePasswordForm').reset();
+        
+        // 성명 필드는 현재 값으로 다시 채움
+        document.getElementById('updateName').value = data.name;
     } catch (error) {
-        console.error('비밀번호 변경 오류:', error);
+        console.error('정보 변경 오류:', error);
         showNotification(error.message, 'error');
     }
 }
@@ -852,6 +872,7 @@ async function changePassword() {
 async function addAccount() {
     const username = document.getElementById('newUsername').value;
     const password = document.getElementById('newAccountPassword').value;
+    const name = document.getElementById('newAccountName').value;
 
     try {
         const response = await fetch(`${API_BASE_URL}/api/auth/accounts`, {
@@ -859,7 +880,7 @@ async function addAccount() {
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ username, password })
+            body: JSON.stringify({ username, password, name })
         });
 
         const data = await response.json();
@@ -888,7 +909,7 @@ async function loadAccounts() {
         const currentUser = localStorage.getItem('adminUser');
 
         if (accounts.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="4" class="empty-row">등록된 계정이 없습니다.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="5" class="empty-row">등록된 계정이 없습니다.</td></tr>';
             return;
         }
 
@@ -896,6 +917,7 @@ async function loadAccounts() {
             <tr>
                 <td>${index + 1}</td>
                 <td>${account.username}${account.username === currentUser ? ' <span style="color: var(--primary-color);">(현재 로그인)</span>' : ''}</td>
+                <td>${account.name || '-'}</td>
                 <td>${formatDate(account.createdAt)}</td>
                 <td>
                     ${account.username !== currentUser ? `
