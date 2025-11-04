@@ -1094,6 +1094,285 @@ async function deleteAccount(username) {
     }
 }
 
+// 엑셀 샘플 파일 다운로드
+function downloadExcelSample() {
+    const sampleData = [
+        ['✅ 필수입력', '', '', '', '', '', '', '', '', '선택입력', ''],
+        ['건물명', '동/타입', '호수', '보증금(만원)', '월세(만원)', '비밀번호', '전입유무', '상태', '연락처', '옵션', '특이사항'],
+        ['', '⬇️ 건물명은 정확히 입력하세요', '', '', '', '', '⬇️ 전입 또는 미전입', '⬇️ 공실/임대중/계약대기', '', '⬇️ 쉼표로 구분', ''],
+        ['타워더모스트', 'A타입', '1503', '5000', '50', '1234*', '전입', '공실', '010-1234-5678', '냉장고, 세탁기, 에어컨', '남향, 신축'],
+        ['타워더모스트', 'B타입', '902', '4500', '45', '9999#', '미전입', '임대중', '010-2222-3333', '침대, 책상', ''],
+        ['해링턴타워', '101동', '801', '3000', '40', '5678#', '전입', '공실', '010-9876-5432', '인덕션, 책상', ''],
+        ['해링턴타워', '102동', '1205', '3500', '35', '', '미전입', '계약대기', '010-7777-8888', '', ''],
+        ['KCC하버뷰', '원룸형(도생)', '305', '2000', '30', '', '전입', '공실', '010-5555-6666', '', '베란다 확장'],
+        ['KCC하버뷰', '101동', '1501', '5000', '55', '1111*', '전입', '공실', '010-4444-5555', '풀옵션', ''],
+        ['', '', '', '', '', '', '', '', '', '', ''],
+        ['📌 건물별 동/타입 목록', '', '', '', '', '', '', '', '', '', ''],
+        ['타워더모스트', 'A타입, B타입, C타입, D타입', '', '', '', '', '', '', '', '', ''],
+        ['해링턴타워', '101동, 102동, 103동', '', '', '', '', '', '', '', '', ''],
+        ['KCC하버뷰', '101동, 102동, 원룸형(도생), 원룸형(오피)', '', '', '', '', '', '', '', '', '']
+    ];
+
+    // 워크북 생성
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(sampleData);
+
+    // 열 너비 설정
+    ws['!cols'] = [
+        { wch: 15 },  // 건물명
+        { wch: 15 },  // 동/타입
+        { wch: 8 },   // 호수
+        { wch: 15 },  // 보증금
+        { wch: 15 },  // 월세
+        { wch: 12 },  // 비밀번호
+        { wch: 10 },  // 전입유무
+        { wch: 10 },  // 상태
+        { wch: 15 },  // 연락처
+        { wch: 30 },  // 옵션
+        { wch: 30 }   // 특이사항
+    ];
+
+    // 워크시트 추가
+    XLSX.utils.book_append_sheet(wb, ws, '매물등록샘플');
+
+    // 파일 다운로드
+    const filename = '매물등록_샘플.xlsx';
+    
+    // 모바일 여부 확인
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    
+    if (isMobile) {
+        const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+        const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const url = URL.createObjectURL(blob);
+        
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        
+        setTimeout(() => {
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }, 100);
+    } else {
+        XLSX.writeFile(wb, filename);
+    }
+    
+    showNotification('샘플 파일이 다운로드되었습니다.', 'success');
+}
+
+// 엑셀 파일 업로드 처리
+function handleExcelUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const fileName = document.getElementById('fileName');
+    const uploadResult = document.getElementById('uploadResult');
+    
+    fileName.textContent = `선택된 파일: ${file.name}`;
+    uploadResult.innerHTML = '<p style="color: var(--warning-color);"><i class="fas fa-spinner fa-spin"></i> 파일을 읽는 중...</p>';
+
+    const reader = new FileReader();
+    
+    reader.onload = function(e) {
+        try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            
+            // 첫 번째 시트 읽기
+            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+            const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+            
+            // 헤더와 설명 행 제외하고 데이터만 추출 (3행부터 시작)
+            const rows = jsonData.slice(3).filter(row => {
+                // 빈 행이나 설명 행 제외 (첫 번째 셀에 이모지나 특수문자가 있는 경우)
+                if (!row || row.length === 0 || !row[0]) return false;
+                const firstCell = String(row[0]).trim();
+                if (firstCell.startsWith('✅') || firstCell.startsWith('📌') || firstCell.startsWith('⬇️')) return false;
+                return true;
+            });
+            
+            if (rows.length === 0) {
+                uploadResult.innerHTML = '<p style="color: var(--danger-color);"><i class="fas fa-exclamation-circle"></i> 등록할 데이터가 없습니다.</p>';
+                return;
+            }
+            
+            // 데이터 검증 및 변환
+            const validBuildings = Object.keys(buildingDongTypes);
+            const validMoveIn = ['전입', '미전입'];
+            const validStatus = ['공실', '임대중', '계약대기'];
+            
+            const properties = rows.map((row, index) => {
+                const [buildingName, dongType, roomNumber, deposit, monthlyRent, password, moveIn, status, contact, options, notes] = row;
+                const rowNum = index + 2; // 엑셀 행 번호 (헤더 포함)
+                
+                // 필수 필드 검증
+                if (!buildingName || !dongType || !roomNumber || !deposit || !monthlyRent || !moveIn || !status || !contact) {
+                    throw new Error(`${rowNum}번째 행: 필수 필드가 누락되었습니다.`);
+                }
+                
+                const trimmedBuilding = String(buildingName).trim();
+                const trimmedDongType = String(dongType).trim();
+                const trimmedMoveIn = String(moveIn).trim();
+                const trimmedStatus = String(status).trim();
+                
+                // 건물명 검증
+                if (!validBuildings.includes(trimmedBuilding)) {
+                    throw new Error(`${rowNum}번째 행: 건물명이 올바르지 않습니다. (${trimmedBuilding})\n허용된 건물: ${validBuildings.join(', ')}`);
+                }
+                
+                // 동/타입 검증
+                if (!buildingDongTypes[trimmedBuilding].includes(trimmedDongType)) {
+                    throw new Error(`${rowNum}번째 행: '${trimmedBuilding}'의 동/타입이 올바르지 않습니다. (${trimmedDongType})\n허용된 타입: ${buildingDongTypes[trimmedBuilding].join(', ')}`);
+                }
+                
+                // 전입유무 검증
+                if (!validMoveIn.includes(trimmedMoveIn)) {
+                    throw new Error(`${rowNum}번째 행: 전입유무가 올바르지 않습니다. (${trimmedMoveIn})\n허용된 값: ${validMoveIn.join(', ')}`);
+                }
+                
+                // 상태 검증
+                if (!validStatus.includes(trimmedStatus)) {
+                    throw new Error(`${rowNum}번째 행: 상태가 올바르지 않습니다. (${trimmedStatus})\n허용된 값: ${validStatus.join(', ')}`);
+                }
+                
+                // 보증금, 월세 검증
+                const depositNum = parseInt(deposit);
+                const monthlyRentNum = parseInt(monthlyRent);
+                if (isNaN(depositNum) || depositNum < 0) {
+                    throw new Error(`${rowNum}번째 행: 보증금이 올바르지 않습니다. (${deposit})`);
+                }
+                if (isNaN(monthlyRentNum) || monthlyRentNum < 0) {
+                    throw new Error(`${rowNum}번째 행: 월세가 올바르지 않습니다. (${monthlyRent})`);
+                }
+                
+                // 옵션 처리
+                const optionsArray = options ? options.split(',').map(opt => opt.trim()).filter(opt => opt) : [];
+                
+                return {
+                    buildingName: trimmedBuilding,
+                    dongType: trimmedDongType,
+                    roomNumber: String(roomNumber).trim(),
+                    deposit: depositNum,
+                    monthlyRent: monthlyRentNum,
+                    password: password ? String(password).trim() : '',
+                    moveIn: trimmedMoveIn,
+                    status: trimmedStatus,
+                    contact: String(contact).trim(),
+                    options: optionsArray,
+                    notes: notes ? String(notes).trim() : ''
+                };
+            });
+            
+            // 전역 변수에 저장
+            window.pendingProperties = properties;
+            
+            // 확인 메시지
+            uploadResult.innerHTML = `
+                <div style="padding: 15px; background-color: var(--bg-tertiary); border-radius: 8px;">
+                    <p style="color: var(--success-color); margin-bottom: 10px;">
+                        <i class="fas fa-check-circle"></i> ${properties.length}개의 매물 데이터를 확인했습니다.
+                    </p>
+                    <button type="button" class="btn btn-primary" onclick="bulkUploadProperties()">
+                        <i class="fas fa-upload"></i> ${properties.length}개 매물 일괄 등록
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="cancelUpload()">
+                        <i class="fas fa-times"></i> 취소
+                    </button>
+                </div>
+            `;
+            
+        } catch (error) {
+            console.error('엑셀 파일 읽기 오류:', error);
+            uploadResult.innerHTML = `<p style="color: var(--danger-color);"><i class="fas fa-exclamation-circle"></i> ${error.message}</p>`;
+        }
+    };
+    
+    reader.onerror = function() {
+        uploadResult.innerHTML = '<p style="color: var(--danger-color);"><i class="fas fa-exclamation-circle"></i> 파일을 읽을 수 없습니다.</p>';
+    };
+    
+    reader.readAsArrayBuffer(file);
+}
+
+// 대량 등록 실행
+async function bulkUploadProperties() {
+    const properties = window.pendingProperties;
+    if (!properties || properties.length === 0) {
+        showNotification('등록할 데이터가 없습니다.', 'error');
+        return;
+    }
+    const uploadResult = document.getElementById('uploadResult');
+    
+    uploadResult.innerHTML = '<p style="color: var(--primary-color);"><i class="fas fa-spinner fa-spin"></i> 매물을 등록하는 중...</p>';
+    
+    let successCount = 0;
+    let failCount = 0;
+    const errors = [];
+    
+    for (let i = 0; i < properties.length; i++) {
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/properties`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(properties[i])
+            });
+            
+            if (!response.ok) {
+                const data = await response.json();
+                throw new Error(data.error || '등록 실패');
+            }
+            
+            successCount++;
+        } catch (error) {
+            failCount++;
+            errors.push(`${i + 1}번째 매물: ${error.message}`);
+        }
+    }
+    
+    // 결과 표시
+    uploadResult.innerHTML = `
+        <div style="padding: 15px; background-color: var(--bg-tertiary); border-radius: 8px;">
+            <p style="color: var(--success-color); margin-bottom: 5px;">
+                <i class="fas fa-check-circle"></i> 성공: ${successCount}개
+            </p>
+            ${failCount > 0 ? `
+                <p style="color: var(--danger-color); margin-bottom: 10px;">
+                    <i class="fas fa-exclamation-circle"></i> 실패: ${failCount}개
+                </p>
+                <details style="margin-top: 10px;">
+                    <summary style="cursor: pointer; color: var(--text-secondary);">오류 상세보기</summary>
+                    <ul style="margin: 10px 0 0 20px; color: var(--danger-color); font-size: 13px;">
+                        ${errors.map(err => `<li>${err}</li>`).join('')}
+                    </ul>
+                </details>
+            ` : ''}
+        </div>
+    `;
+    
+    showNotification(`${successCount}개 매물이 등록되었습니다.`, 'success');
+    
+    // 파일 입력 초기화
+    document.getElementById('excelFileInput').value = '';
+    document.getElementById('fileName').textContent = '';
+    
+    // 데이터 다시 로드
+    await loadFromAPI();
+}
+
+// 업로드 취소
+function cancelUpload() {
+    document.getElementById('excelFileInput').value = '';
+    document.getElementById('fileName').textContent = '';
+    document.getElementById('uploadResult').innerHTML = '';
+    window.pendingProperties = null;
+}
+
 // 엑셀 다운로드 기능 (XLSX)
 function exportToExcel() {
     // 현재 필터링된 매물 가져오기
