@@ -1075,12 +1075,35 @@ function exportToExcel() {
     // 워크시트를 워크북에 추가
     XLSX.utils.book_append_sheet(wb, ws, '매물리스트');
 
-    // 파일 다운로드
+    // 파일명 생성
     const today = new Date();
     const dateStr = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
     const filename = `매물리스트_${dateStr}.xlsx`;
     
-    XLSX.writeFile(wb, filename);
+    // 모바일 여부 확인
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    
+    if (isMobile) {
+        // 모바일: Blob 방식으로 다운로드
+        const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+        const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const url = URL.createObjectURL(blob);
+        
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        
+        setTimeout(() => {
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }, 100);
+    } else {
+        // 데스크톱: 기본 방식
+        XLSX.writeFile(wb, filename);
+    }
     
     showNotification(`${filtered.length}개 매물이 다운로드되었습니다.`, 'success');
 }

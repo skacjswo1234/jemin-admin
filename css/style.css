@@ -537,6 +537,25 @@ body {
     cursor: pointer;
 }
 
+/* 리스트 헤더 */
+.list-header {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.search-and-export {
+    display: flex;
+    gap: 10px;
+    flex: 1;
+    min-width: 300px;
+}
+
+.excel-btn {
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
 /* 테이블 */
 .table-responsive {
     overflow-x: auto;
@@ -1127,6 +1146,34 @@ body {
         flex-direction: column;
         gap: 15px;
         align-items: flex-start;
+    }
+
+    /* 리스트 헤더 모바일 */
+    .list-header {
+        flex-direction: column;
+    }
+
+    .search-and-export {
+        width: 100%;
+        min-width: unset;
+        flex-direction: column;
+    }
+
+    .search-box {
+        width: 100%;
+    }
+
+    .search-box input {
+        width: 100%;
+    }
+
+    .excel-btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .excel-btn .btn-text {
+        display: inline;
     }
 
     .filter-box {
