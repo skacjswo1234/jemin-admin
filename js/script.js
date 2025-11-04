@@ -204,7 +204,7 @@ function updateDongTypeOptions() {
     }
 }
 
-// 리스트 필터: 건물 선택 시 동/타입 필터 업데이트
+// 리스트 필터: 건물 선택 시 동/타입 필터 업데이트 (고정된 타입 목록 사용)
 function onBuildingChange() {
     const filterBuilding = document.getElementById('filterBuilding');
     const filterDongType = document.getElementById('filterDongType');
@@ -218,38 +218,26 @@ function onBuildingChange() {
         return;
     }
     
-    // 선택된 건물의 실제 등록된 동/타입만 표시
-    const dongTypes = new Set();
-    properties.forEach(property => {
-        if (property.buildingName === selectedBuilding && property.dongType) {
-            dongTypes.add(property.dongType);
-        }
-    });
-    
-    // 동/타입 옵션 추가
-    Array.from(dongTypes).sort().forEach(dongType => {
-        const option = document.createElement('option');
-        option.value = dongType;
-        option.textContent = dongType;
-        filterDongType.appendChild(option);
-    });
+    // 선택된 건물의 고정된 동/타입 목록 표시
+    if (buildingDongTypes[selectedBuilding]) {
+        buildingDongTypes[selectedBuilding].forEach(dongType => {
+            const option = document.createElement('option');
+            option.value = dongType;
+            option.textContent = dongType;
+            filterDongType.appendChild(option);
+        });
+    }
     
     renderPropertiesList();
 }
 
-// 건물 필터 업데이트
+// 건물 필터 업데이트 (고정된 건물 목록 사용)
 function updateBuildingFilter() {
     const filterBuilding = document.getElementById('filterBuilding');
-    const buildings = new Set();
-    
-    properties.forEach(property => {
-        if (property.buildingName) {
-            buildings.add(property.buildingName);
-        }
-    });
+    const buildings = ['타워더모스트', '해링턴타워', 'KCC하버뷰'];
     
     filterBuilding.innerHTML = '<option value="">전체 건물</option>';
-    Array.from(buildings).sort().forEach(building => {
+    buildings.forEach(building => {
         const option = document.createElement('option');
         option.value = building;
         option.textContent = building;
@@ -668,72 +656,193 @@ function renderDetailStats() {
     `;
 }
 
-// 매물 상세보기
+// 매물 상세보기/수정
 function viewProperty(id) {
     const property = properties.find(p => p.id === id);
     if (!property) return;
 
     const modal = document.getElementById('propertyModal');
     const modalBody = document.getElementById('modalBody');
+    
+    // 동/타입 옵션 생성
+    let dongTypeOptions = '<option value="">동/타입 선택</option>';
+    if (property.buildingName && buildingDongTypes[property.buildingName]) {
+        buildingDongTypes[property.buildingName].forEach(dongType => {
+            const selected = dongType === property.dongType ? 'selected' : '';
+            dongTypeOptions += `<option value="${dongType}" ${selected}>${dongType}</option>`;
+        });
+    }
+    
+    // 옵션 체크박스 생성
+    const allOptions = ['냉장고', '세탁기', '에어컨', '인덕션', '전자레인지', '책상', '침대', '옷장'];
+    const propertyOptions = property.options || [];
+    const optionsHtml = allOptions.map(opt => {
+        const checked = propertyOptions.includes(opt) ? 'checked' : '';
+        return `
+            <label class="checkbox-label">
+                <input type="checkbox" name="modalOption" value="${opt}" ${checked}>
+                ${opt}
+            </label>
+        `;
+    }).join('');
 
     modalBody.innerHTML = `
-        <div class="modal-detail-grid">
-            <div class="modal-detail-item">
-                <span class="modal-detail-label">건물명:</span>
-                <span class="modal-detail-value">${property.buildingName || '미등록'}</span>
+        <form id="editPropertyForm" class="modal-edit-form">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="modalBuildingName">건물명</label>
+                    <select id="modalBuildingName" onchange="updateModalDongType()" required>
+                        <option value="">건물 선택</option>
+                        <option value="타워더모스트" ${property.buildingName === '타워더모스트' ? 'selected' : ''}>타워더모스트</option>
+                        <option value="해링턴타워" ${property.buildingName === '해링턴타워' ? 'selected' : ''}>해링턴타워</option>
+                        <option value="KCC하버뷰" ${property.buildingName === 'KCC하버뷰' ? 'selected' : ''}>KCC하버뷰</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="modalDongType">동/타입</label>
+                    <select id="modalDongType" required>
+                        ${dongTypeOptions}
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="modalRoomNumber">호수</label>
+                    <input type="text" id="modalRoomNumber" value="${property.roomNumber || ''}" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="modalDeposit">보증금 (만원)</label>
+                    <input type="number" id="modalDeposit" value="${property.deposit || 0}" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="modalMonthlyRent">월세 (만원)</label>
+                    <input type="number" id="modalMonthlyRent" value="${property.monthlyRent || 0}" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="modalPassword">비밀번호</label>
+                    <input type="text" id="modalPassword" value="${property.password || ''}">
+                </div>
+                
+                <div class="form-group">
+                    <label for="modalMoveIn">전입유무</label>
+                    <select id="modalMoveIn" required>
+                        <option value="전입" ${property.moveIn === '전입' ? 'selected' : ''}>전입</option>
+                        <option value="미전입" ${property.moveIn === '미전입' ? 'selected' : ''}>미전입</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="modalStatus">상태</label>
+                    <select id="modalStatus" required>
+                        <option value="공실" ${property.status === '공실' ? 'selected' : ''}>공실</option>
+                        <option value="임대중" ${property.status === '임대중' ? 'selected' : ''}>임대중</option>
+                        <option value="계약대기" ${property.status === '계약대기' ? 'selected' : ''}>계약대기</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="modalContact">연락처</label>
+                    <input type="text" id="modalContact" value="${property.contact || ''}" required>
+                </div>
+                
+                <div class="form-group full-width">
+                    <label>옵션</label>
+                    <div class="checkbox-group">
+                        ${optionsHtml}
+                    </div>
+                </div>
+                
+                <div class="form-group full-width">
+                    <label for="modalNotes">특이사항</label>
+                    <textarea id="modalNotes" rows="3">${property.notes || ''}</textarea>
+                </div>
+                
+                <div class="form-group full-width" style="color: var(--text-secondary); font-size: 13px;">
+                    등록일: ${formatDate(property.createdAt)}
+                </div>
             </div>
-            <div class="modal-detail-item">
-                <span class="modal-detail-label">동/타입:</span>
-                <span class="modal-detail-value">${property.dongType || '-'}</span>
+            
+            <div class="form-actions" style="margin-top: 20px;">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> 수정 저장
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="closeModal()">
+                    <i class="fas fa-times"></i> 취소
+                </button>
             </div>
-            <div class="modal-detail-item">
-                <span class="modal-detail-label">호수:</span>
-                <span class="modal-detail-value">${property.roomNumber || '-'}호</span>
-            </div>
-            <div class="modal-detail-item">
-                <span class="modal-detail-label">보증금:</span>
-                <span class="modal-detail-value">${(property.deposit || 0).toLocaleString()}만원</span>
-            </div>
-            <div class="modal-detail-item">
-                <span class="modal-detail-label">월세:</span>
-                <span class="modal-detail-value">${(property.monthlyRent || 0).toLocaleString()}만원</span>
-            </div>
-            <div class="modal-detail-item">
-                <span class="modal-detail-label">비밀번호:</span>
-                <span class="modal-detail-value">${property.password || '미등록'}</span>
-            </div>
-            <div class="modal-detail-item">
-                <span class="modal-detail-label">전입유무:</span>
-                <span class="modal-detail-value">${property.moveIn || '-'}</span>
-            </div>
-            <div class="modal-detail-item">
-                <span class="modal-detail-label">상태:</span>
-                <span class="modal-detail-value"><span class="status-badge ${getStatusClass(property.status)}">${property.status || '미정'}</span></span>
-            </div>
-            <div class="modal-detail-item">
-                <span class="modal-detail-label">연락처:</span>
-                <span class="modal-detail-value">${property.contact || '-'}</span>
-            </div>
-            <div class="modal-detail-item">
-                <span class="modal-detail-label">등록일:</span>
-                <span class="modal-detail-value">${formatDate(property.createdAt)}</span>
-            </div>
-            ${property.options && property.options.length > 0 ? `
-            <div class="modal-detail-item" style="grid-column: 1 / -1;">
-                <span class="modal-detail-label">옵션:</span>
-                <span class="modal-detail-value">${property.options.join(', ')}</span>
-            </div>
-            ` : ''}
-            ${property.notes ? `
-            <div class="modal-detail-item" style="grid-column: 1 / -1;">
-                <span class="modal-detail-label">특이사항:</span>
-                <span class="modal-detail-value">${property.notes}</span>
-            </div>
-            ` : ''}
-        </div>
+        </form>
     `;
 
+    // 폼 제출 이벤트
+    document.getElementById('editPropertyForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        updateProperty(property.id);
+    });
+
     modal.classList.add('active');
+}
+
+// 모달 내 동/타입 업데이트
+function updateModalDongType() {
+    const buildingSelect = document.getElementById('modalBuildingName');
+    const dongTypeSelect = document.getElementById('modalDongType');
+    const selectedBuilding = buildingSelect.value;
+    
+    dongTypeSelect.innerHTML = '<option value="">동/타입 선택</option>';
+    
+    if (selectedBuilding && buildingDongTypes[selectedBuilding]) {
+        buildingDongTypes[selectedBuilding].forEach(dongType => {
+            const option = document.createElement('option');
+            option.value = dongType;
+            option.textContent = dongType;
+            dongTypeSelect.appendChild(option);
+        });
+    }
+}
+
+// 매물 수정
+async function updateProperty(id) {
+    const optionCheckboxes = document.querySelectorAll('input[name="modalOption"]:checked');
+    const options = Array.from(optionCheckboxes).map(cb => cb.value);
+
+    const updatedProperty = {
+        buildingName: document.getElementById('modalBuildingName').value,
+        dongType: document.getElementById('modalDongType').value,
+        roomNumber: document.getElementById('modalRoomNumber').value,
+        deposit: parseInt(document.getElementById('modalDeposit').value),
+        monthlyRent: parseInt(document.getElementById('modalMonthlyRent').value),
+        password: document.getElementById('modalPassword').value,
+        moveIn: document.getElementById('modalMoveIn').value,
+        status: document.getElementById('modalStatus').value,
+        options: options,
+        notes: document.getElementById('modalNotes').value,
+        contact: document.getElementById('modalContact').value
+    };
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/properties/${id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(updatedProperty)
+        });
+
+        if (!response.ok) throw new Error('매물 수정 실패');
+
+        showNotification('매물이 성공적으로 수정되었습니다!', 'success');
+        closeModal();
+        
+        // 데이터 다시 로드
+        await loadFromAPI();
+        
+    } catch (error) {
+        console.error('매물 수정 오류:', error);
+        showNotification('매물 수정에 실패했습니다.', 'error');
+    }
 }
 
 // 모달 닫기
