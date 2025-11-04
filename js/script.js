@@ -162,9 +162,11 @@ function initializeEventListeners() {
     });
 
     // 필터
+    const filterBuilding = document.getElementById('filterBuilding');
     const filterMoveIn = document.getElementById('filterMoveIn');
     const filterStatus = document.getElementById('filterStatus');
     const filterDongType = document.getElementById('filterDongType');
+    
     filterMoveIn.addEventListener('change', renderPropertiesList);
     filterStatus.addEventListener('change', renderPropertiesList);
     filterDongType.addEventListener('change', renderPropertiesList);
@@ -208,10 +210,10 @@ function onBuildingChange() {
     const filterDongType = document.getElementById('filterDongType');
     const selectedBuilding = filterBuilding.value;
     
+    // 동/타입 필터 초기화
     filterDongType.innerHTML = '<option value="">전체 동/타입</option>';
     
     if (!selectedBuilding) {
-        filterDongType.style.display = 'none';
         renderPropertiesList();
         return;
     }
@@ -224,17 +226,13 @@ function onBuildingChange() {
         }
     });
     
-    if (dongTypes.size > 0) {
-        filterDongType.style.display = 'block';
-        Array.from(dongTypes).sort().forEach(dongType => {
-            const option = document.createElement('option');
-            option.value = dongType;
-            option.textContent = dongType;
-            filterDongType.appendChild(option);
-        });
-    } else {
-        filterDongType.style.display = 'none';
-    }
+    // 동/타입 옵션 추가
+    Array.from(dongTypes).sort().forEach(dongType => {
+        const option = document.createElement('option');
+        option.value = dongType;
+        option.textContent = dongType;
+        filterDongType.appendChild(option);
+    });
     
     renderPropertiesList();
 }
@@ -758,18 +756,40 @@ async function deleteProperty(id) {
     
     try {
         const response = await fetch(`${API_BASE_URL}/api/properties/${id}`, {
-            method: 'DELETE'
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'Cache-Control': 'no-cache'
+            }
         });
 
-        if (!response.ok) throw new Error('매물 삭제 실패');
+        const data = await response.json();
 
-        showNotification('매물이 삭제되었습니다.', 'error');
+        if (!response.ok) {
+            throw new Error(data.error || '매물 삭제 실패');
+        }
+
+        // 성공 메시지
+        showNotification('매물이 삭제되었습니다.', 'success');
         
-        // 데이터 다시 로드
-        await loadFromAPI();
+        // 로컬 배열에서 즉시 제거 (낙관적 업데이트)
+        properties = properties.filter(p => p.id !== id);
+        
+        // UI 즉시 업데이트
+        updateDashboard();
+        renderPropertiesList();
+        
+        // 서버에서 최신 데이터 다시 로드 (백그라운드)
+        setTimeout(() => {
+            loadFromAPI();
+        }, 100);
+        
     } catch (error) {
         console.error('매물 삭제 오류:', error);
-        showNotification('매물 삭제에 실패했습니다.', 'error');
+        showNotification(error.message || '매물 삭제에 실패했습니다.', 'error');
+        
+        // 에러 발생시 데이터 다시 로드
+        await loadFromAPI();
     }
 }
 
@@ -778,23 +798,31 @@ function showNotification(message, type = 'success') {
     const notification = document.createElement('div');
     notification.className = `notification-toast ${type}`;
     notification.textContent = message;
+    
+    // 모바일 여부 확인
+    const isMobile = window.innerWidth <= 768;
+    
     notification.style.cssText = `
         position: fixed;
-        top: 90px;
-        right: 30px;
+        top: ${isMobile ? '80px' : '90px'};
+        ${isMobile ? 'left: 50%; transform: translateX(-50%);' : 'right: 30px;'}
         background: ${type === 'success' ? 'var(--success-color)' : 'var(--danger-color)'};
         color: white;
-        padding: 15px 25px;
+        padding: ${isMobile ? '12px 20px' : '15px 25px'};
         border-radius: 8px;
         box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
         z-index: 3000;
-        animation: slideIn 0.3s ease;
+        max-width: ${isMobile ? 'calc(100vw - 30px)' : '400px'};
+        width: ${isMobile ? 'auto' : 'auto'};
+        text-align: center;
+        font-size: ${isMobile ? '14px' : '15px'};
+        animation: ${isMobile ? 'slideInDown' : 'slideIn'} 0.3s ease;
     `;
 
     document.body.appendChild(notification);
 
     setTimeout(() => {
-        notification.style.animation = 'slideOut 0.3s ease';
+        notification.style.animation = `${isMobile ? 'slideOutUp' : 'slideOut'} 0.3s ease`;
         setTimeout(() => notification.remove(), 300);
     }, 3000);
 }
@@ -957,6 +985,106 @@ async function deleteAccount(username) {
     }
 }
 
+// 엑셀 다운로드 기능 (XLSX)
+function exportToExcel() {
+    // 현재 필터링된 매물 가져오기
+    const searchInput = document.getElementById('searchInput');
+    const filterBuilding = document.getElementById('filterBuilding');
+    const filterDongType = document.getElementById('filterDongType');
+    const filterMoveIn = document.getElementById('filterMoveIn');
+    const filterStatus = document.getElementById('filterStatus');
+    
+    const searchTerm = searchInput.value.toLowerCase();
+    const filterBuildingValue = filterBuilding.value;
+    const filterDongTypeValue = filterDongType.value;
+    const filterMoveInValue = filterMoveIn.value;
+    const filterStatusValue = filterStatus.value;
+
+    let filtered = properties.filter(property => {
+        const buildingName = property.buildingName || '';
+        const roomNumber = property.roomNumber || '';
+        const dongType = property.dongType || '';
+        
+        const matchesSearch = buildingName.toLowerCase().includes(searchTerm) ||
+                            roomNumber.toLowerCase().includes(searchTerm) ||
+                            dongType.toLowerCase().includes(searchTerm);
+        
+        const matchesBuilding = !filterBuildingValue || property.buildingName === filterBuildingValue;
+        const matchesDongType = !filterDongTypeValue || property.dongType === filterDongTypeValue;
+        const matchesMoveIn = !filterMoveInValue || property.moveIn === filterMoveInValue;
+        const matchesStatus = !filterStatusValue || property.status === filterStatusValue;
+
+        return matchesSearch && matchesBuilding && matchesDongType && matchesMoveIn && matchesStatus;
+    });
+
+    if (filtered.length === 0) {
+        showNotification('다운로드할 매물이 없습니다.', 'error');
+        return;
+    }
+
+    // 엑셀 데이터 준비
+    const excelData = [];
+    
+    // 헤더 행
+    excelData.push([
+        '번호', '건물명', '동/타입', '호수', 
+        '보증금(만원)', '월세(만원)', '비밀번호', 
+        '전입유무', '상태', '연락처', '옵션', '특이사항', '등록일'
+    ]);
+
+    // 데이터 행
+    filtered.forEach((property, index) => {
+        excelData.push([
+            index + 1,
+            property.buildingName || '',
+            property.dongType || '',
+            property.roomNumber || '',
+            property.deposit || 0,
+            property.monthlyRent || 0,
+            property.password || '',
+            property.moveIn || '',
+            property.status || '',
+            property.contact || '',
+            property.options ? property.options.join(', ') : '',
+            property.notes || '',
+            formatDate(property.createdAt)
+        ]);
+    });
+
+    // 워크북 및 워크시트 생성
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(excelData);
+
+    // 열 너비 설정
+    ws['!cols'] = [
+        { wch: 6 },   // 번호
+        { wch: 15 },  // 건물명
+        { wch: 12 },  // 동/타입
+        { wch: 8 },   // 호수
+        { wch: 12 },  // 보증금
+        { wch: 12 },  // 월세
+        { wch: 12 },  // 비밀번호
+        { wch: 10 },  // 전입유무
+        { wch: 10 },  // 상태
+        { wch: 15 },  // 연락처
+        { wch: 20 },  // 옵션
+        { wch: 30 },  // 특이사항
+        { wch: 12 }   // 등록일
+    ];
+
+    // 워크시트를 워크북에 추가
+    XLSX.utils.book_append_sheet(wb, ws, '매물리스트');
+
+    // 파일 다운로드
+    const today = new Date();
+    const dateStr = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
+    const filename = `매물리스트_${dateStr}.xlsx`;
+    
+    XLSX.writeFile(wb, filename);
+    
+    showNotification(`${filtered.length}개 매물이 다운로드되었습니다.`, 'success');
+}
+
 // 애니메이션 추가
 const style = document.createElement('style');
 style.textContent = `
@@ -977,6 +1105,26 @@ style.textContent = `
         }
         to {
             transform: translateX(400px);
+            opacity: 0;
+        }
+    }
+    @keyframes slideInDown {
+        from {
+            transform: translate(-50%, -20px);
+            opacity: 0;
+        }
+        to {
+            transform: translate(-50%, 0);
+            opacity: 1;
+        }
+    }
+    @keyframes slideOutUp {
+        from {
+            transform: translate(-50%, 0);
+            opacity: 1;
+        }
+        to {
+            transform: translate(-50%, -20px);
             opacity: 0;
         }
     }

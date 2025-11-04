@@ -252,17 +252,22 @@
             </div>
 
             <div class="card">
-                <div class="card-header">
-                    <div class="search-box">
-                        <i class="fas fa-search"></i>
-                        <input type="text" id="searchInput" placeholder="매물 검색...">
+                <div class="card-header" style="flex-wrap: wrap; gap: 15px;">
+                    <div style="display: flex; gap: 10px; flex: 1; min-width: 300px;">
+                        <div class="search-box">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="searchInput" placeholder="매물 검색...">
+                        </div>
+                        <button class="btn btn-success" onclick="exportToExcel()" title="엑셀 다운로드" style="white-space: nowrap;">
+                            <i class="fas fa-file-excel"></i> 엑셀 다운로드
+                        </button>
                     </div>
                     <div class="filter-box">
                         <select id="filterBuilding" onchange="onBuildingChange()">
                             <option value="">전체 건물</option>
                         </select>
-                        <select id="filterDongType" style="display:none;">
-                            <option value="">동/타입 선택</option>
+                        <select id="filterDongType">
+                            <option value="">전체 동/타입</option>
                         </select>
                         <select id="filterMoveIn">
                             <option value="">전체 전입</option>
@@ -476,6 +481,8 @@
         </div>
     </div>
 
+    <!-- SheetJS 라이브러리 (엑셀 다운로드) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="js/script.js"></script>
 </body>
 </html>
