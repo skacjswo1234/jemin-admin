@@ -11,6 +11,9 @@ const buildingDongTypes = {
     'KCC하버뷰': ['101동', '102동', '원룸형(도생)', '원룸형(오피)']
 };
 
+// 매물 옵션 목록
+const propertyOptions = ['냉장고', '세탁기', '에어컨', '인덕션', '전자레인지', '책상', '침대', '옷장'];
+
 // API에서 데이터 로드
 async function loadFromAPI() {
     try {
@@ -281,15 +284,15 @@ async function addProperty() {
     const property = {
         buildingName: document.getElementById('buildingName').value,
         dongType: document.getElementById('dongType').value,
-        roomNumber: document.getElementById('roomNumber').value,
-        deposit: parseInt(document.getElementById('deposit').value),
-        monthlyRent: parseInt(document.getElementById('monthlyRent').value),
-        password: document.getElementById('password').value,
+        roomNumber: document.getElementById('roomNumber').value || '',
+        deposit: parseInt(document.getElementById('deposit').value) || 0,
+        monthlyRent: parseInt(document.getElementById('monthlyRent').value) || 0,
+        password: document.getElementById('password').value || '',
         moveIn: document.getElementById('moveIn').value,
         status: document.getElementById('status').value,
         options: options,
-        notes: document.getElementById('notes').value,
-        contact: document.getElementById('contact').value
+        notes: document.getElementById('notes').value || '',
+        contact: document.getElementById('contact').value || ''
     };
 
     try {
@@ -674,10 +677,9 @@ function viewProperty(id) {
     }
     
     // 옵션 체크박스 생성
-    const allOptions = ['냉장고', '세탁기', '에어컨', '인덕션', '전자레인지', '책상', '침대', '옷장'];
-    const propertyOptions = property.options || [];
-    const optionsHtml = allOptions.map(opt => {
-        const checked = propertyOptions.includes(opt) ? 'checked' : '';
+    const currentOptions = property.options || [];
+    const optionsHtml = propertyOptions.map(opt => {
+        const checked = currentOptions.includes(opt) ? 'checked' : '';
         return `
             <label class="checkbox-label">
                 <input type="checkbox" name="modalOption" value="${opt}" ${checked}>
@@ -1097,20 +1099,24 @@ async function deleteAccount(username) {
 // 엑셀 샘플 파일 다운로드
 function downloadExcelSample() {
     const sampleData = [
-        ['✅ 필수입력', '', '', '', '', '', '', '', '', '선택입력', ''],
+        ['✅ 필수입력', '✅ 필수입력', '선택입력', '선택입력', '선택입력', '선택입력', '선택입력', '선택입력', '선택입력', '선택입력', '선택입력'],
         ['건물명', '동/타입', '호수', '보증금(만원)', '월세(만원)', '비밀번호', '전입유무', '상태', '연락처', '옵션', '특이사항'],
-        ['', '⬇️ 건물명은 정확히 입력하세요', '', '', '', '', '⬇️ 전입 또는 미전입', '⬇️ 공실/임대중/계약대기', '', '⬇️ 쉼표로 구분', ''],
+        ['⬇️ 정확히 입력', '⬇️ 정확히 입력', '', '', '', '', '전입/미전입', '공실/임대중/계약대기', '', '⬇️ 쉼표로 구분', ''],
         ['타워더모스트', 'A타입', '1503', '5000', '50', '1234*', '전입', '공실', '010-1234-5678', '냉장고, 세탁기, 에어컨', '남향, 신축'],
-        ['타워더모스트', 'B타입', '902', '4500', '45', '9999#', '미전입', '임대중', '010-2222-3333', '침대, 책상', ''],
-        ['해링턴타워', '101동', '801', '3000', '40', '5678#', '전입', '공실', '010-9876-5432', '인덕션, 책상', ''],
-        ['해링턴타워', '102동', '1205', '3500', '35', '', '미전입', '계약대기', '010-7777-8888', '', ''],
-        ['KCC하버뷰', '원룸형(도생)', '305', '2000', '30', '', '전입', '공실', '010-5555-6666', '', '베란다 확장'],
-        ['KCC하버뷰', '101동', '1501', '5000', '55', '1111*', '전입', '공실', '010-4444-5555', '풀옵션', ''],
         ['', '', '', '', '', '', '', '', '', '', ''],
-        ['📌 건물별 동/타입 목록', '', '', '', '', '', '', '', '', '', ''],
-        ['타워더모스트', 'A타입, B타입, C타입, D타입', '', '', '', '', '', '', '', '', ''],
-        ['해링턴타워', '101동, 102동, 103동', '', '', '', '', '', '', '', '', ''],
-        ['KCC하버뷰', '101동, 102동, 원룸형(도생), 원룸형(오피)', '', '', '', '', '', '', '', '', '']
+        ['', '', '', '', '', '', '', '', '', '', ''],
+        ['📌 건물별 동/타입 목록 (반드시 아래 목록에서 선택)', '', '', '', '', '', '', '', '', '', ''],
+        ['', '', '', '', '', '', '', '', '', '', ''],
+        ['타워더모스트', '➡️ A타입, B타입, C타입, D타입', '', '', '', '', '', '', '', '', ''],
+        ['해링턴타워', '➡️ 101동, 102동, 103동', '', '', '', '', '', '', '', '', ''],
+        ['KCC하버뷰', '➡️ 101동, 102동, 원룸형(도생), 원룸형(오피)', '', '', '', '', '', '', '', '', ''],
+        ['', '', '', '', '', '', '', '', '', '', ''],
+        ['💡 작성 가이드', '', '', '', '', '', '', '', '', '', ''],
+        ['- 건물명과 동/타입은 반드시 입력해야 합니다', '', '', '', '', '', '', '', '', '', ''],
+        ['- 나머지 항목은 선택입력이며 비워둘 수 있습니다', '', '', '', '', '', '', '', '', '', ''],
+        ['- 전입유무: 전입 또는 미전입 (비우면 기본값 미전입)', '', '', '', '', '', '', '', '', '', ''],
+        ['- 상태: 공실, 임대중, 계약대기 중 선택 (비우면 기본값 공실)', '', '', '', '', '', '', '', '', '', ''],
+        ['- 옵션: 냉장고, 세탁기, 에어컨, 인덕션, 전자레인지, 책상, 침대, 옷장 중 선택 (여러개는 쉼표로 구분)', '', '', '', '', '', '', '', '', '', '']
     ];
 
     // 워크북 생성
@@ -1207,17 +1213,15 @@ function handleExcelUpload(event) {
             
             const properties = rows.map((row, index) => {
                 const [buildingName, dongType, roomNumber, deposit, monthlyRent, password, moveIn, status, contact, options, notes] = row;
-                const rowNum = index + 2; // 엑셀 행 번호 (헤더 포함)
+                const rowNum = index + 4; // 엑셀 행 번호 (헤더 3행 포함)
                 
-                // 필수 필드 검증
-                if (!buildingName || !dongType || !roomNumber || !deposit || !monthlyRent || !moveIn || !status || !contact) {
-                    throw new Error(`${rowNum}번째 행: 필수 필드가 누락되었습니다.`);
+                // 필수 필드 검증 (건물명, 동/타입만 필수)
+                if (!buildingName || !dongType) {
+                    throw new Error(`${rowNum}번째 행: 건물명과 동/타입은 필수입니다.`);
                 }
                 
                 const trimmedBuilding = String(buildingName).trim();
                 const trimmedDongType = String(dongType).trim();
-                const trimmedMoveIn = String(moveIn).trim();
-                const trimmedStatus = String(status).trim();
                 
                 // 건물명 검증
                 if (!validBuildings.includes(trimmedBuilding)) {
@@ -1229,24 +1233,29 @@ function handleExcelUpload(event) {
                     throw new Error(`${rowNum}번째 행: '${trimmedBuilding}'의 동/타입이 올바르지 않습니다. (${trimmedDongType})\n허용된 타입: ${buildingDongTypes[trimmedBuilding].join(', ')}`);
                 }
                 
-                // 전입유무 검증
-                if (!validMoveIn.includes(trimmedMoveIn)) {
+                // 선택 필드 처리 (입력값이 있을 경우에만 검증)
+                const trimmedMoveIn = moveIn ? String(moveIn).trim() : '미전입';
+                const trimmedStatus = status ? String(status).trim() : '공실';
+                
+                // 전입유무 검증 (입력된 경우)
+                if (moveIn && !validMoveIn.includes(trimmedMoveIn)) {
                     throw new Error(`${rowNum}번째 행: 전입유무가 올바르지 않습니다. (${trimmedMoveIn})\n허용된 값: ${validMoveIn.join(', ')}`);
                 }
                 
-                // 상태 검증
-                if (!validStatus.includes(trimmedStatus)) {
+                // 상태 검증 (입력된 경우)
+                if (status && !validStatus.includes(trimmedStatus)) {
                     throw new Error(`${rowNum}번째 행: 상태가 올바르지 않습니다. (${trimmedStatus})\n허용된 값: ${validStatus.join(', ')}`);
                 }
                 
-                // 보증금, 월세 검증
-                const depositNum = parseInt(deposit);
-                const monthlyRentNum = parseInt(monthlyRent);
-                if (isNaN(depositNum) || depositNum < 0) {
-                    throw new Error(`${rowNum}번째 행: 보증금이 올바르지 않습니다. (${deposit})`);
+                // 보증금, 월세 처리 (숫자가 아니면 0)
+                const depositNum = deposit ? parseInt(deposit) : 0;
+                const monthlyRentNum = monthlyRent ? parseInt(monthlyRent) : 0;
+                
+                if (deposit && (isNaN(depositNum) || depositNum < 0)) {
+                    throw new Error(`${rowNum}번째 행: 보증금은 0 이상의 숫자여야 합니다. (${deposit})`);
                 }
-                if (isNaN(monthlyRentNum) || monthlyRentNum < 0) {
-                    throw new Error(`${rowNum}번째 행: 월세가 올바르지 않습니다. (${monthlyRent})`);
+                if (monthlyRent && (isNaN(monthlyRentNum) || monthlyRentNum < 0)) {
+                    throw new Error(`${rowNum}번째 행: 월세는 0 이상의 숫자여야 합니다. (${monthlyRent})`);
                 }
                 
                 // 옵션 처리
@@ -1255,13 +1264,13 @@ function handleExcelUpload(event) {
                 return {
                     buildingName: trimmedBuilding,
                     dongType: trimmedDongType,
-                    roomNumber: String(roomNumber).trim(),
+                    roomNumber: roomNumber ? String(roomNumber).trim() : '',
                     deposit: depositNum,
                     monthlyRent: monthlyRentNum,
                     password: password ? String(password).trim() : '',
                     moveIn: trimmedMoveIn,
                     status: trimmedStatus,
-                    contact: String(contact).trim(),
+                    contact: contact ? String(contact).trim() : '',
                     options: optionsArray,
                     notes: notes ? String(notes).trim() : ''
                 };

@@ -89,9 +89,9 @@ export async function onRequestPost(context) {
       contact 
     } = data;
     
-    // 필수 필드 검증
-    if (!buildingName || !dongType || !roomNumber || !deposit || !monthlyRent || !moveIn || !status || !contact) {
-      return new Response(JSON.stringify({ error: '필수 필드가 누락되었습니다.' }), {
+    // 필수 필드 검증 (건물명과 동/타입만 필수)
+    if (!buildingName || !dongType) {
+      return new Response(JSON.stringify({ error: '건물명과 동/타입은 필수입니다.' }), {
         status: 400,
         headers: {
           'Content-Type': 'application/json',
@@ -110,15 +110,15 @@ export async function onRequestPost(context) {
     ).bind(
       buildingName, 
       dongType, 
-      roomNumber, 
-      deposit, 
-      monthlyRent, 
+      roomNumber || '', 
+      deposit || 0, 
+      monthlyRent || 0, 
       password || null, 
-      moveIn, 
-      status, 
+      moveIn || '미전입', 
+      status || '공실', 
       optionsJson, 
       notes || null, 
-      contact
+      contact || ''
     ).run();
     
     // 성공 응답에 새로 생성된 데이터 포함
