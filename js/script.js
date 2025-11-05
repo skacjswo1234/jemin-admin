@@ -696,12 +696,37 @@ function renderDetailStats() {
 }
 
 // 매물 상세보기/수정
-function viewProperty(id) {
-    const property = properties.find(p => p.id === id);
-    if (!property) return;
+async function viewProperty(id) {
+    let property = properties.find(p => p.id === id);
+    
+    // properties 배열에 없으면 API에서 직접 조회 (삭제된 매물일 수 있음)
+    if (!property) {
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/properties/${id}`, {
+                cache: 'no-cache',
+                headers: {
+                    'Cache-Control': 'no-cache'
+                }
+            });
+            if (!response.ok) {
+                showNotification('매물을 찾을 수 없습니다.', 'error');
+                return;
+            }
+            property = await response.json();
+        } catch (error) {
+            console.error('매물 조회 오류:', error);
+            showNotification('매물 정보를 불러오는데 실패했습니다.', 'error');
+            return;
+        }
+    }
 
     const modal = document.getElementById('propertyModal');
     const modalBody = document.getElementById('modalBody');
+    
+    // 삭제된 매물인지 확인 (del_yn이 'Y'이면 읽기 전용)
+    const isDeleted = property.del_yn === 'Y';
+    const readonlyAttr = isDeleted ? 'readonly disabled' : '';
+    const readonlyStyle = isDeleted ? 'background-color: var(--bg-secondary); opacity: 0.7;' : '';
     
     // 동/타입 옵션 생성
     let dongTypeOptions = '<option value="">동/타입 선택</option>';
@@ -712,13 +737,14 @@ function viewProperty(id) {
         });
     }
     
-    // 옵션 체크박스 생성
+    // 옵션 체크박스 생성 (삭제된 매물이면 읽기 전용)
     const currentOptions = property.options || [];
+    const checkboxDisabled = isDeleted ? 'disabled' : '';
     const optionsHtml = propertyOptions.map(opt => {
         const checked = currentOptions.includes(opt) ? 'checked' : '';
         return `
-            <label class="checkbox-label">
-                <input type="checkbox" name="modalOption" value="${opt}" ${checked}>
+            <label class="checkbox-label" style="${readonlyStyle}">
+                <input type="checkbox" name="modalOption" value="${opt}" ${checked} ${checkboxDisabled}>
                 ${opt}
             </label>
         `;
@@ -726,10 +752,11 @@ function viewProperty(id) {
 
     modalBody.innerHTML = `
         <form id="editPropertyForm" class="modal-edit-form">
+            ${isDeleted ? '<div style="background-color: var(--danger-color); color: white; padding: 12px; border-radius: 6px; margin-bottom: 20px; text-align: center;"><i class="fas fa-info-circle"></i> 이 매물은 과거 이력입니다. 읽기 전용 모드입니다.</div>' : ''}
             <div class="form-grid">
                 <div class="form-group">
                     <label for="modalBuildingName">건물명</label>
-                    <select id="modalBuildingName" onchange="updateModalDongType()" required>
+                    <select id="modalBuildingName" onchange="updateModalDongType()" ${readonlyAttr} required style="${readonlyStyle}">
                         <option value="">건물 선택</option>
                         <option value="타워더모스트" ${property.buildingName === '타워더모스트' ? 'selected' : ''}>타워더모스트</option>
                         <option value="해링턴타워" ${property.buildingName === '해링턴타워' ? 'selected' : ''}>해링턴타워</option>
@@ -739,34 +766,34 @@ function viewProperty(id) {
                 
                 <div class="form-group">
                     <label for="modalDongType">동/타입</label>
-                    <select id="modalDongType" required>
+                    <select id="modalDongType" ${readonlyAttr} required style="${readonlyStyle}">
                         ${dongTypeOptions}
                     </select>
                 </div>
                 
                 <div class="form-group">
                     <label for="modalRoomNumber">호수</label>
-                    <input type="text" id="modalRoomNumber" value="${property.roomNumber || ''}" required>
+                    <input type="text" id="modalRoomNumber" value="${property.roomNumber || ''}" ${readonlyAttr} required style="${readonlyStyle}">
                 </div>
                 
                 <div class="form-group">
                     <label for="modalDeposit">보증금 (만원)</label>
-                    <input type="number" id="modalDeposit" value="${property.deposit || 0}" required>
+                    <input type="number" id="modalDeposit" value="${property.deposit || 0}" ${readonlyAttr} required style="${readonlyStyle}">
                 </div>
                 
                 <div class="form-group">
                     <label for="modalMonthlyRent">월세 (만원)</label>
-                    <input type="number" id="modalMonthlyRent" value="${property.monthlyRent || 0}" required>
+                    <input type="number" id="modalMonthlyRent" value="${property.monthlyRent || 0}" ${readonlyAttr} required style="${readonlyStyle}">
                 </div>
                 
                 <div class="form-group">
                     <label for="modalPassword">비밀번호</label>
-                    <input type="text" id="modalPassword" value="${property.password || ''}">
+                    <input type="text" id="modalPassword" value="${property.password || ''}" ${readonlyAttr} style="${readonlyStyle}">
                 </div>
                 
                 <div class="form-group">
                     <label for="modalMoveIn">전입유무</label>
-                    <select id="modalMoveIn" required>
+                    <select id="modalMoveIn" ${readonlyAttr} required style="${readonlyStyle}">
                         <option value="전입" ${property.moveIn === '전입' ? 'selected' : ''}>전입</option>
                         <option value="미전입" ${property.moveIn === '미전입' ? 'selected' : ''}>미전입</option>
                     </select>
@@ -774,7 +801,7 @@ function viewProperty(id) {
                 
                 <div class="form-group">
                     <label for="modalStatus">상태</label>
-                    <select id="modalStatus" required>
+                    <select id="modalStatus" ${readonlyAttr} required style="${readonlyStyle}">
                         <option value="공실" ${property.status === '공실' ? 'selected' : ''}>공실</option>
                         <option value="임대중" ${property.status === '임대중' ? 'selected' : ''}>임대중</option>
                         <option value="계약대기" ${property.status === '계약대기' ? 'selected' : ''}>계약대기</option>
@@ -783,7 +810,7 @@ function viewProperty(id) {
                 
                 <div class="form-group">
                     <label for="modalContact">연락처</label>
-                    <input type="text" id="modalContact" value="${property.contact || ''}" required>
+                    <input type="text" id="modalContact" value="${property.contact || ''}" ${readonlyAttr} required style="${readonlyStyle}">
                 </div>
                 
                 <div class="form-group full-width">
@@ -795,30 +822,45 @@ function viewProperty(id) {
                 
                 <div class="form-group full-width">
                     <label for="modalNotes">특이사항</label>
-                    <textarea id="modalNotes" rows="3">${property.notes || ''}</textarea>
+                    <textarea id="modalNotes" rows="3" ${readonlyAttr} style="${readonlyStyle}">${property.notes || ''}</textarea>
                 </div>
                 
                 <div class="form-group full-width" style="color: var(--text-secondary); font-size: 13px;">
                     등록일: ${formatDate(property.createdAt)}
+                    ${isDeleted ? '<br>과거이력: 삭제된 매물' : ''}
                 </div>
             </div>
             
             <div class="form-actions" style="margin-top: 20px;">
+                ${!isDeleted ? `
                 <button type="submit" class="btn btn-primary">
                     <i class="fas fa-save"></i> 수정 저장
                 </button>
+                ` : ''}
                 <button type="button" class="btn btn-secondary" onclick="closeModal()">
-                    <i class="fas fa-times"></i> 취소
+                    <i class="fas fa-times"></i> ${isDeleted ? '닫기' : '취소'}
                 </button>
             </div>
         </form>
     `;
 
-    // 폼 제출 이벤트
-    document.getElementById('editPropertyForm').addEventListener('submit', (e) => {
-        e.preventDefault();
-        updateProperty(property.id);
-    });
+    // 폼 제출 이벤트 (삭제된 매물이 아닌 경우에만)
+    if (!isDeleted) {
+        // 약간의 지연을 두어 DOM이 완전히 렌더링된 후 이벤트 리스너 추가
+        setTimeout(() => {
+            const form = document.getElementById('editPropertyForm');
+            if (form) {
+                // 기존 이벤트 리스너가 있다면 제거
+                const newForm = form.cloneNode(true);
+                form.parentNode.replaceChild(newForm, form);
+                // 새 이벤트 리스너 추가
+                document.getElementById('editPropertyForm').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    updateProperty(property.id);
+                });
+            }
+        }, 100);
+    }
 
     modal.classList.add('active');
 }
