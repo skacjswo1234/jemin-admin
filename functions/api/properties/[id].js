@@ -111,15 +111,16 @@ export async function onRequestPut(context) {
   }
 }
 
-// DELETE: 매물 삭제
+// DELETE: 매물 논리 삭제 (del_yn = 'Y'로 업데이트)
 export async function onRequestDelete(context) {
   try {
     const { env, params } = context;
     const id = params.id;
     
+    // 논리 삭제: del_yn을 'Y'로 업데이트
     const result = await env.DB.prepare(
-      'DELETE FROM properties WHERE id = ?'
-    ).bind(id).run();
+      'UPDATE properties SET del_yn = ? WHERE id = ?'
+    ).bind('Y', id).run();
     
     if (result.meta.changes === 0) {
       return new Response(JSON.stringify({ error: '매물을 찾을 수 없습니다.' }), {

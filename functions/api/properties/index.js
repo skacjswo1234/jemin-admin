@@ -10,9 +10,15 @@ export async function onRequestGet(context) {
     const moveIn = url.searchParams.get('moveIn');
     const status = url.searchParams.get('status');
     const search = url.searchParams.get('search');
+    const delYn = url.searchParams.get('delYn'); // 'Y' 또는 'N', 없으면 기본값 'N'
     
     let query = 'SELECT * FROM properties WHERE 1=1';
     let params = [];
+    
+    // del_yn 필터 (기본값 'N' - 삭제되지 않은 매물만)
+    const delYnValue = delYn || 'N';
+    query += ' AND del_yn = ?';
+    params.push(delYnValue);
     
     if (buildingName) {
       query += ' AND buildingName = ?';
@@ -102,11 +108,11 @@ export async function onRequestPost(context) {
     
     const optionsJson = JSON.stringify(options || []);
     
-    // 트랜잭션으로 안전하게 처리
+    // 트랜잭션으로 안전하게 처리 (del_yn 기본값 'N' 포함)
     const result = await env.DB.prepare(
       `INSERT INTO properties 
-       (buildingName, dongType, roomNumber, deposit, monthlyRent, password, moveIn, status, options, notes, contact) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+       (buildingName, dongType, roomNumber, deposit, monthlyRent, password, moveIn, status, options, notes, contact, del_yn) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'N')`
     ).bind(
       buildingName, 
       dongType, 

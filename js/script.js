@@ -160,9 +160,11 @@ function initializeEventListeners() {
 
     // 검색
     const searchInput = document.getElementById('searchInput');
-    searchInput.addEventListener('input', function() {
-        renderPropertiesList();
-    });
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            renderPropertiesList();
+        });
+    }
 
     // 필터
     const filterBuilding = document.getElementById('filterBuilding');
@@ -170,9 +172,25 @@ function initializeEventListeners() {
     const filterStatus = document.getElementById('filterStatus');
     const filterDongType = document.getElementById('filterDongType');
     
-    filterMoveIn.addEventListener('change', renderPropertiesList);
-    filterStatus.addEventListener('change', renderPropertiesList);
-    filterDongType.addEventListener('change', renderPropertiesList);
+    if (filterMoveIn) filterMoveIn.addEventListener('change', renderPropertiesList);
+    if (filterStatus) filterStatus.addEventListener('change', renderPropertiesList);
+    if (filterDongType) filterDongType.addEventListener('change', renderPropertiesList);
+
+    // 과거 내역 검색 및 필터
+    const historySearchInput = document.getElementById('historySearchInput');
+    if (historySearchInput) {
+        historySearchInput.addEventListener('input', function() {
+            renderHistoryList();
+        });
+    }
+
+    const historyFilterMoveIn = document.getElementById('historyFilterMoveIn');
+    const historyFilterStatus = document.getElementById('historyFilterStatus');
+    const historyFilterDongType = document.getElementById('historyFilterDongType');
+    
+    if (historyFilterMoveIn) historyFilterMoveIn.addEventListener('change', renderHistoryList);
+    if (historyFilterStatus) historyFilterStatus.addEventListener('change', renderHistoryList);
+    if (historyFilterDongType) historyFilterDongType.addEventListener('change', renderHistoryList);
 }
 
 // 풀옵션 토글 함수
@@ -272,6 +290,12 @@ function switchTab(tabName) {
         if (nameField && adminName) {
             nameField.value = adminName;
         }
+    }
+
+    // 과거 내역 탭일 경우 삭제된 매물 목록 로드
+    if (tabName === 'history') {
+        renderHistoryList();
+        updateHistoryBuildingFilter();
     }
 }
 
@@ -867,9 +891,9 @@ window.addEventListener('click', function(e) {
     }
 });
 
-// 매물 삭제
+// 매물 논리 삭제 (del_yn = 'Y'로 업데이트)
 async function deleteProperty(id) {
-    if (!confirm('정말로 이 매물을 삭제하시겠습니까?')) return;
+    if (!confirm('정말로 이 매물을 삭제하시겠습니까?\n삭제된 매물은 과거 내역 탭에서 확인할 수 있습니다.')) return;
     
     try {
         const response = await fetch(`${API_BASE_URL}/api/properties/${id}`, {
@@ -887,7 +911,7 @@ async function deleteProperty(id) {
         }
 
         // 성공 메시지
-        showNotification('매물이 삭제되었습니다.', 'success');
+        showNotification('매물이 삭제되었습니다. (과거 내역 탭에서 확인 가능)', 'success');
         
         // 로컬 배열에서 즉시 제거 (낙관적 업데이트)
         properties = properties.filter(p => p.id !== id);
@@ -907,6 +931,189 @@ async function deleteProperty(id) {
         
         // 에러 발생시 데이터 다시 로드
         await loadFromAPI();
+    }
+}
+
+// 삭제된 매물 목록 로드 (과거 내역)
+async function loadDeletedProperties() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/properties?delYn=Y`);
+        if (!response.ok) throw new Error('삭제된 매물 데이터 로드 실패');
+        return await response.json();
+    } catch (error) {
+        console.error('삭제된 매물 로드 오류:', error);
+        showNotification('삭제된 매물 데이터를 불러오는데 실패했습니다.', 'error');
+        return [];
+    }
+}
+
+// 과거 내역 건물 필터 업데이트
+function updateHistoryBuildingFilter() {
+    const filterBuilding = document.getElementById('historyFilterBuilding');
+    if (!filterBuilding) return;
+    
+    const buildings = ['타워더모스트', '해링턴타워', 'KCC하버뷰'];
+    
+    filterBuilding.innerHTML = '<option value="">전체 건물</option>';
+    buildings.forEach(building => {
+        const option = document.createElement('option');
+        option.value = building;
+        option.textContent = building;
+        filterBuilding.appendChild(option);
+    });
+}
+
+// 과거 내역 건물 변경 핸들러
+function onHistoryBuildingChange() {
+    const filterBuilding = document.getElementById('historyFilterBuilding');
+    const filterDongType = document.getElementById('historyFilterDongType');
+    const selectedBuilding = filterBuilding.value;
+    
+    filterDongType.innerHTML = '<option value="">전체 동/타입</option>';
+    
+    if (!selectedBuilding) {
+        renderHistoryList();
+        return;
+    }
+    
+    if (buildingDongTypes[selectedBuilding]) {
+        buildingDongTypes[selectedBuilding].forEach(dongType => {
+            const option = document.createElement('option');
+            option.value = dongType;
+            option.textContent = dongType;
+            filterDongType.appendChild(option);
+        });
+    }
+    
+    renderHistoryList();
+}
+
+// 과거 내역 리스트 렌더링
+async function renderHistoryList() {
+    const searchInput = document.getElementById('historySearchInput');
+    const filterBuilding = document.getElementById('historyFilterBuilding');
+    const filterDongType = document.getElementById('historyFilterDongType');
+    const filterMoveIn = document.getElementById('historyFilterMoveIn');
+    const filterStatus = document.getElementById('historyFilterStatus');
+    
+    if (!searchInput || !filterMoveIn || !filterStatus) return;
+    
+    // 삭제된 매물 데이터 로드
+    const deletedProperties = await loadDeletedProperties();
+    
+    const searchTerm = searchInput.value.toLowerCase();
+    const filterBuildingValue = filterBuilding ? filterBuilding.value : '';
+    const filterDongTypeValue = filterDongType ? filterDongType.value : '';
+    const filterMoveInValue = filterMoveIn.value;
+    const filterStatusValue = filterStatus.value;
+
+    let filtered = deletedProperties.filter(property => {
+        const buildingName = property.buildingName || '';
+        const roomNumber = property.roomNumber || '';
+        const dongType = property.dongType || '';
+        
+        const matchesSearch = buildingName.toLowerCase().includes(searchTerm) ||
+                            roomNumber.toLowerCase().includes(searchTerm) ||
+                            dongType.toLowerCase().includes(searchTerm);
+        
+        const matchesBuilding = !filterBuildingValue || property.buildingName === filterBuildingValue;
+        const matchesDongType = !filterDongTypeValue || property.dongType === filterDongTypeValue;
+        const matchesMoveIn = !filterMoveInValue || property.moveIn === filterMoveInValue;
+        const matchesStatus = !filterStatusValue || property.status === filterStatusValue;
+
+        return matchesSearch && matchesBuilding && matchesDongType && matchesMoveIn && matchesStatus;
+    });
+
+    // 화면 크기 확인
+    const isMobile = window.innerWidth <= 768;
+
+    if (isMobile) {
+        // 모바일: 카드 뷰
+        const cardsContainer = document.getElementById('historyCards');
+        if (!cardsContainer) return;
+        
+        if (filtered.length === 0) {
+            cardsContainer.innerHTML = '<div class="empty-message">삭제된 매물이 없습니다.</div>';
+        } else {
+            cardsContainer.innerHTML = filtered.map(property => `
+                <div class="property-card" style="opacity: 0.7; border-left-color: var(--danger-color);">
+                    <div class="property-card-header">
+                        <div class="property-card-title">
+                            <h4>${property.buildingName || '미등록'} ${property.dongType || ''} ${property.roomNumber || ''}호</h4>
+                            <p>${property.contact || '-'}</p>
+                        </div>
+                        <div class="property-card-price">${(property.deposit || 0).toLocaleString()}/${(property.monthlyRent || 0).toLocaleString()}</div>
+                    </div>
+                    <div class="property-card-details">
+                        <div class="property-card-detail">
+                            <i class="fas fa-won-sign"></i>
+                            <span>보증금 ${(property.deposit || 0).toLocaleString()}만</span>
+                        </div>
+                        <div class="property-card-detail">
+                            <i class="fas fa-credit-card"></i>
+                            <span>월세 ${(property.monthlyRent || 0).toLocaleString()}만</span>
+                        </div>
+                        <div class="property-card-detail">
+                            <i class="fas fa-user-check"></i>
+                            <span>${property.moveIn || '-'}</span>
+                        </div>
+                        <div class="property-card-detail">
+                            <i class="fas fa-key"></i>
+                            <span>${property.password || '미등록'}</span>
+                        </div>
+                    </div>
+                    ${property.options && property.options.length > 0 ? `
+                    <div class="property-card-options">
+                        <i class="fas fa-check-circle"></i>
+                        <span>${property.options.join(', ')}</span>
+                    </div>
+                    ` : ''}
+                    <div class="property-card-footer">
+                        <div>
+                            <span class="status-badge ${getStatusClass(property.status)}">${property.status || '미정'}</span>
+                            <span class="property-card-date"> · ${formatDate(property.createdAt)}</span>
+                            <span class="property-card-date" style="color: var(--danger-color);"> · 삭제됨</span>
+                        </div>
+                        <div class="property-card-actions">
+                            <button class="btn btn-sm btn-secondary" onclick="viewProperty(${property.id})">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+    } else {
+        // PC: 테이블 뷰
+        const tbody = document.getElementById('historyTableBody');
+        if (!tbody) return;
+
+        if (filtered.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="12" class="empty-row">삭제된 매물이 없습니다.</td></tr>';
+        } else {
+            tbody.innerHTML = filtered.map((property, index) => `
+                <tr style="opacity: 0.7;">
+                    <td>${index + 1}</td>
+                    <td>${property.buildingName || '미등록'}</td>
+                    <td>${property.dongType || '-'}</td>
+                    <td>${property.roomNumber || '-'}호</td>
+                    <td>${(property.deposit || 0).toLocaleString()}만</td>
+                    <td>${(property.monthlyRent || 0).toLocaleString()}만</td>
+                    <td>${property.moveIn || '-'}</td>
+                    <td><span class="status-badge ${getStatusClass(property.status)}">${property.status || '미정'}</span></td>
+                    <td>${property.contact || '-'}</td>
+                    <td>${formatDate(property.createdAt)}</td>
+                    <td style="color: var(--danger-color);">삭제됨</td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="action-btn edit" onclick="viewProperty(${property.id})" title="상세보기">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
     }
 }
 
