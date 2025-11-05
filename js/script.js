@@ -398,93 +398,99 @@ function renderPropertiesList() {
         return matchesSearch && matchesBuilding && matchesDongType && matchesMoveIn && matchesStatus;
     });
 
-    // 데스크톱 테이블 뷰 렌더링
-    const tbody = document.getElementById('propertiesTableBody');
+    // 화면 크기 확인 (768px를 기준으로 모바일/데스크톱 구분)
+    const isMobile = window.innerWidth <= 768;
 
-    if (filtered.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="11" class="empty-row">매물이 없습니다.</td></tr>';
-    } else {
-        tbody.innerHTML = filtered.map((property, index) => `
-            <tr>
-                <td>${index + 1}</td>
-                <td>${property.buildingName || '미등록'}</td>
-                <td>${property.dongType || '-'}</td>
-                <td>${property.roomNumber || '-'}호</td>
-                <td>${(property.deposit || 0).toLocaleString()}만</td>
-                <td>${(property.monthlyRent || 0).toLocaleString()}만</td>
-                <td>${property.moveIn || '-'}</td>
-                <td><span class="status-badge ${getStatusClass(property.status)}">${property.status || '미정'}</span></td>
-                <td>${property.contact || '-'}</td>
-                <td>${formatDate(property.createdAt)}</td>
-                <td>
-                    <div class="action-buttons">
-                        <button class="action-btn edit" onclick="viewProperty(${property.id})" title="상세보기">
-                            <i class="fas fa-eye"></i>
-                        </button>
-                        <button class="action-btn delete" onclick="deleteProperty(${property.id})" title="삭제">
-                            <i class="fas fa-trash"></i>
-                        </button>
+    // PC에서는 테이블 뷰만, 모바일에서는 카드 뷰만 렌더링
+    if (isMobile) {
+        // 모바일: 카드 뷰만 렌더링
+        const cardsContainer = document.getElementById('propertiesCards');
+        
+        if (filtered.length === 0) {
+            cardsContainer.innerHTML = '<div class="empty-message">매물이 없습니다.</div>';
+        } else {
+            cardsContainer.innerHTML = filtered.map(property => `
+                <div class="property-card">
+                    <div class="property-card-header">
+                        <div class="property-card-title">
+                            <h4>${property.buildingName || '미등록'} ${property.dongType || ''} ${property.roomNumber || ''}호</h4>
+                            <p>${property.contact || '-'}</p>
+                        </div>
+                        <div class="property-card-price">${(property.deposit || 0).toLocaleString()}/${(property.monthlyRent || 0).toLocaleString()}</div>
                     </div>
-                </td>
-            </tr>
-        `).join('');
-    }
+                    <div class="property-card-details">
+                        <div class="property-card-detail">
+                            <i class="fas fa-won-sign"></i>
+                            <span>보증금 ${(property.deposit || 0).toLocaleString()}만</span>
+                        </div>
+                        <div class="property-card-detail">
+                            <i class="fas fa-credit-card"></i>
+                            <span>월세 ${(property.monthlyRent || 0).toLocaleString()}만</span>
+                        </div>
+                        <div class="property-card-detail">
+                            <i class="fas fa-user-check"></i>
+                            <span>${property.moveIn || '-'}</span>
+                        </div>
+                        <div class="property-card-detail">
+                            <i class="fas fa-key"></i>
+                            <span>${property.password || '미등록'}</span>
+                        </div>
+                    </div>
+                    ${property.options && property.options.length > 0 ? `
+                    <div class="property-card-options">
+                        <i class="fas fa-check-circle"></i>
+                        <span>${property.options.join(', ')}</span>
+                    </div>
+                    ` : ''}
+                    <div class="property-card-footer">
+                        <div>
+                            <span class="status-badge ${getStatusClass(property.status)}">${property.status || '미정'}</span>
+                            <span class="property-card-date"> · ${formatDate(property.createdAt)}</span>
+                        </div>
+                        <div class="property-card-actions">
+                            <button class="btn btn-sm btn-primary" onclick="viewProperty(${property.id})">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteProperty(${property.id})">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+    } else {
+        // PC: 테이블 뷰만 렌더링
+        const tbody = document.getElementById('propertiesTableBody');
 
-    // 모바일 카드 뷰 렌더링
-    const cardsContainer = document.getElementById('propertiesCards');
-    
-    if (filtered.length === 0) {
-        cardsContainer.innerHTML = '<div class="empty-message">매물이 없습니다.</div>';
-    } else {
-        cardsContainer.innerHTML = filtered.map(property => `
-            <div class="property-card">
-                <div class="property-card-header">
-                    <div class="property-card-title">
-                        <h4>${property.buildingName || '미등록'} ${property.dongType || ''} ${property.roomNumber || ''}호</h4>
-                        <p>${property.contact || '-'}</p>
-                    </div>
-                    <div class="property-card-price">${(property.deposit || 0).toLocaleString()}/${(property.monthlyRent || 0).toLocaleString()}</div>
-                </div>
-                <div class="property-card-details">
-                    <div class="property-card-detail">
-                        <i class="fas fa-won-sign"></i>
-                        <span>보증금 ${(property.deposit || 0).toLocaleString()}만</span>
-                    </div>
-                    <div class="property-card-detail">
-                        <i class="fas fa-credit-card"></i>
-                        <span>월세 ${(property.monthlyRent || 0).toLocaleString()}만</span>
-                    </div>
-                    <div class="property-card-detail">
-                        <i class="fas fa-user-check"></i>
-                        <span>${property.moveIn || '-'}</span>
-                    </div>
-                    <div class="property-card-detail">
-                        <i class="fas fa-key"></i>
-                        <span>${property.password || '미등록'}</span>
-                    </div>
-                </div>
-                ${property.options && property.options.length > 0 ? `
-                <div class="property-card-options">
-                    <i class="fas fa-check-circle"></i>
-                    <span>${property.options.join(', ')}</span>
-                </div>
-                ` : ''}
-                <div class="property-card-footer">
-                    <div>
-                        <span class="status-badge ${getStatusClass(property.status)}">${property.status || '미정'}</span>
-                        <span class="property-card-date"> · ${formatDate(property.createdAt)}</span>
-                    </div>
-                    <div class="property-card-actions">
-                        <button class="btn btn-sm btn-primary" onclick="viewProperty(${property.id})">
-                            <i class="fas fa-eye"></i>
-                        </button>
-                        <button class="btn btn-sm btn-danger" onclick="deleteProperty(${property.id})">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `).join('');
+        if (filtered.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="11" class="empty-row">매물이 없습니다.</td></tr>';
+        } else {
+            tbody.innerHTML = filtered.map((property, index) => `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>${property.buildingName || '미등록'}</td>
+                    <td>${property.dongType || '-'}</td>
+                    <td>${property.roomNumber || '-'}호</td>
+                    <td>${(property.deposit || 0).toLocaleString()}만</td>
+                    <td>${(property.monthlyRent || 0).toLocaleString()}만</td>
+                    <td>${property.moveIn || '-'}</td>
+                    <td><span class="status-badge ${getStatusClass(property.status)}">${property.status || '미정'}</span></td>
+                    <td>${property.contact || '-'}</td>
+                    <td>${formatDate(property.createdAt)}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="action-btn edit" onclick="viewProperty(${property.id})" title="상세보기">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="action-btn delete" onclick="deleteProperty(${property.id})" title="삭제">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
     }
 }
 
