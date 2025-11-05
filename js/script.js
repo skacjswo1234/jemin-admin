@@ -17,7 +17,13 @@ const propertyOptions = ['냉장고', '세탁기', '에어컨', '인덕션', '�
 // API에서 데이터 로드
 async function loadFromAPI() {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/properties`);
+        // 캐시를 무시하여 최신 데이터를 가져옴
+        const response = await fetch(`${API_BASE_URL}/api/properties?delYn=N`, {
+            cache: 'no-cache',
+            headers: {
+                'Cache-Control': 'no-cache'
+            }
+        });
         if (!response.ok) throw new Error('데이터 로드 실패');
         properties = await response.json();
         updateDashboard();
@@ -913,17 +919,8 @@ async function deleteProperty(id) {
         // 성공 메시지
         showNotification('매물이 삭제되었습니다. (과거 내역 탭에서 확인 가능)', 'success');
         
-        // 로컬 배열에서 즉시 제거 (낙관적 업데이트)
-        properties = properties.filter(p => p.id !== id);
-        
-        // UI 즉시 업데이트
-        updateDashboard();
-        renderPropertiesList();
-        
-        // 서버에서 최신 데이터 다시 로드 (백그라운드)
-        setTimeout(() => {
-            loadFromAPI();
-        }, 100);
+        // 서버에서 최신 데이터 다시 로드 (삭제된 매물은 자동으로 제외됨)
+        await loadFromAPI();
         
     } catch (error) {
         console.error('매물 삭제 오류:', error);
@@ -1072,7 +1069,7 @@ async function renderHistoryList() {
                         <div>
                             <span class="status-badge ${getStatusClass(property.status)}">${property.status || '미정'}</span>
                             <span class="property-card-date"> · ${formatDate(property.createdAt)}</span>
-                            <span class="property-card-date" style="color: var(--danger-color);"> · 삭제됨</span>
+                            <span class="property-card-date" style="color: var(--danger-color);"> · 과거이력</span>
                         </div>
                         <div class="property-card-actions">
                             <button class="btn btn-sm btn-secondary" onclick="viewProperty(${property.id})">
@@ -1103,7 +1100,7 @@ async function renderHistoryList() {
                     <td><span class="status-badge ${getStatusClass(property.status)}">${property.status || '미정'}</span></td>
                     <td>${property.contact || '-'}</td>
                     <td>${formatDate(property.createdAt)}</td>
-                    <td style="color: var(--danger-color);">삭제됨</td>
+                    <td style="color: var(--danger-color);">과거이력</td>
                     <td>
                         <div class="action-buttons">
                             <button class="action-btn edit" onclick="viewProperty(${property.id})" title="상세보기">
