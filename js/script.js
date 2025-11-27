@@ -95,6 +95,20 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
+    // 계정 관리 메뉴 및 탭 표시/숨김 처리 (jemin만 볼 수 있음)
+    if (adminUser !== 'jemin') {
+        // 사이드바 메뉴에서 계정 관리 항목 숨기기
+        const accountNavItem = document.querySelector('a[data-tab="account"]');
+        if (accountNavItem) {
+            accountNavItem.parentElement.style.display = 'none';
+        }
+        // 계정 관리 탭 섹션 숨기기
+        const accountTab = document.getElementById('account');
+        if (accountTab) {
+            accountTab.style.display = 'none';
+        }
+    }
+    
     loadFromAPI();
     initializeEventListeners();
 });
@@ -301,8 +315,20 @@ function switchTab(tabName) {
         renderStats();
     }
 
-    // 계정 관리 탭일 경우 계정 목록 로드 및 성명 초기화
+    // 계정 관리 탭일 경우 계정 목록 로드 및 성명 초기화 (jemin만 접근 가능)
     if (tabName === 'account') {
+        const adminUser = localStorage.getItem('adminUser');
+        if (adminUser !== 'jemin') {
+            // jemin이 아니면 대시보드로 리다이렉트
+            switchTab('dashboard');
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+                if (item.querySelector('[data-tab="dashboard"]')) {
+                    item.classList.add('active');
+                }
+            });
+            return;
+        }
         loadAccounts();
         // 성명 필드에 현재 사용자 성명 채우기
         const adminName = localStorage.getItem('adminName');
@@ -1326,7 +1352,7 @@ async function loadAccounts() {
         const currentUser = localStorage.getItem('adminUser');
 
         if (accounts.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" class="empty-row">등록된 계정이 없습니다.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" class="empty-row">등록된 계정이 없습니다.</td></tr>';
             return;
         }
 
@@ -1334,6 +1360,7 @@ async function loadAccounts() {
             <tr>
                 <td>${index + 1}</td>
                 <td>${account.username}${account.username === currentUser ? ' <span style="color: var(--primary-color);">(현재 로그인)</span>' : ''}</td>
+                <td>${account.password || '-'}</td>
                 <td>${account.name || '-'}</td>
                 <td>${formatDate(account.createdAt)}</td>
                 <td>

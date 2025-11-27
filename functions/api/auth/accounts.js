@@ -4,7 +4,7 @@ export async function onRequestGet(context) {
     const { env } = context;
     
     const { results } = await env.DB.prepare(
-      'SELECT id, username, name, createdAt FROM admins ORDER BY id'
+      'SELECT id, username, password, name, createdAt FROM admins ORDER BY id'
     ).all();
     
     return new Response(JSON.stringify(results), {
