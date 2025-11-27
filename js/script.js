@@ -109,6 +109,14 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
+    // 엑셀 다운로드 버튼 표시/숨김 처리 (jemin만 볼 수 있음)
+    const excelDownloadBtn = document.getElementById('excelDownloadBtn');
+    if (excelDownloadBtn) {
+        if (adminUser !== 'jemin') {
+            excelDownloadBtn.style.display = 'none';
+        }
+    }
+    
     loadFromAPI();
     initializeEventListeners();
 });
