@@ -81,6 +81,20 @@ document.addEventListener('DOMContentLoaded', function() {
     const adminUser = localStorage.getItem('adminUser');
     document.getElementById('adminName').textContent = adminName || adminUser;
     
+    // 과거 내역 메뉴 및 탭 표시/숨김 처리 (jemin만 볼 수 있음)
+    if (adminUser !== 'jemin') {
+        // 사이드바 메뉴에서 과거 내역 항목 숨기기
+        const historyNavItem = document.querySelector('a[data-tab="history"]');
+        if (historyNavItem) {
+            historyNavItem.parentElement.style.display = 'none';
+        }
+        // 과거 내역 탭 섹션 숨기기
+        const historyTab = document.getElementById('history');
+        if (historyTab) {
+            historyTab.style.display = 'none';
+        }
+    }
+    
     loadFromAPI();
     initializeEventListeners();
 });
@@ -298,8 +312,20 @@ function switchTab(tabName) {
         }
     }
 
-    // 과거 내역 탭일 경우 삭제된 매물 목록 로드
+    // 과거 내역 탭일 경우 삭제된 매물 목록 로드 (jemin만 접근 가능)
     if (tabName === 'history') {
+        const adminUser = localStorage.getItem('adminUser');
+        if (adminUser !== 'jemin') {
+            // jemin이 아니면 대시보드로 리다이렉트
+            switchTab('dashboard');
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+                if (item.querySelector('[data-tab="dashboard"]')) {
+                    item.classList.add('active');
+                }
+            });
+            return;
+        }
         renderHistoryList();
         updateHistoryBuildingFilter();
     }
