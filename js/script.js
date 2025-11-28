@@ -551,7 +551,7 @@ function renderPropertiesList() {
                     <div class="property-card-header">
                         <div class="property-card-title">
                             <h4>${property.buildingName || '미등록'} ${property.dongType || ''} ${property.roomNumber || ''}호</h4>
-                            <p>${property.contact || '-'}${property.shortTermAvailable === 'Y' ? ` (단기: O${property.shortTermRent ? ' - ' + property.shortTermRent : ''})` : property.shortTermAvailable === 'N' ? ` (단기: X)` : ''}</p>
+                            <p>${property.contact || '-'}${property.shortTermAvailable === 'Y' ? ` (단기 O${property.shortTermRent ? ' - 월세: ' + property.shortTermRent : ''})` : property.shortTermAvailable === 'N' ? ` (단기: X)` : ''}</p>
                         </div>
                         <div class="property-card-price">${(property.deposit || 0).toLocaleString()}/${(property.monthlyRent || 0).toLocaleString()}</div>
                     </div>
@@ -613,7 +613,7 @@ function renderPropertiesList() {
                     <td>${(property.monthlyRent || 0).toLocaleString()}만</td>
                     <td>${property.moveIn || '-'}</td>
                     <td><span class="status-badge ${getStatusClass(property.status)}">${property.status || '미정'}</span></td>
-                    <td>${property.contact || '-'}${property.shortTermAvailable === 'Y' ? ` (단기: O${property.shortTermRent ? ' - ' + property.shortTermRent : ''})` : property.shortTermAvailable === 'N' ? ` (단기: X)` : ''}</td>
+                    <td>${property.contact || '-'}${property.shortTermAvailable === 'Y' ? ` (단기 O${property.shortTermRent ? ' - 월세: ' + property.shortTermRent : ''})` : property.shortTermAvailable === 'N' ? ` (단기: X)` : ''}</td>
                     <td>${formatDate(property.createdAt)}</td>
                     <td>
                         <div class="action-buttons">
@@ -1231,7 +1231,7 @@ async function renderHistoryList() {
                     <div class="property-card-header">
                         <div class="property-card-title">
                             <h4>${property.buildingName || '미등록'} ${property.dongType || ''} ${property.roomNumber || ''}호</h4>
-                            <p>${property.contact || '-'}${property.shortTermAvailable === 'Y' ? ` (단기: O${property.shortTermRent ? ' - ' + property.shortTermRent : ''})` : property.shortTermAvailable === 'N' ? ` (단기: X)` : ''}</p>
+                            <p>${property.contact || '-'}${property.shortTermAvailable === 'Y' ? ` (단기 O${property.shortTermRent ? ' - 월세: ' + property.shortTermRent : ''})` : property.shortTermAvailable === 'N' ? ` (단기: X)` : ''}</p>
                         </div>
                         <div class="property-card-price">${(property.deposit || 0).toLocaleString()}/${(property.monthlyRent || 0).toLocaleString()}</div>
                     </div>
@@ -1292,7 +1292,7 @@ async function renderHistoryList() {
                     <td>${(property.monthlyRent || 0).toLocaleString()}만</td>
                     <td>${property.moveIn || '-'}</td>
                     <td><span class="status-badge ${getStatusClass(property.status)}">${property.status || '미정'}</span></td>
-                    <td>${property.contact || '-'}${property.shortTermAvailable === 'Y' ? ` (단기: O${property.shortTermRent ? ' - ' + property.shortTermRent : ''})` : property.shortTermAvailable === 'N' ? ` (단기: X)` : ''}</td>
+                    <td>${property.contact || '-'}${property.shortTermAvailable === 'Y' ? ` (단기 O${property.shortTermRent ? ' - 월세: ' + property.shortTermRent : ''})` : property.shortTermAvailable === 'N' ? ` (단기: X)` : ''}</td>
                     <td>${formatDate(property.createdAt)}</td>
                     <td style="color: var(--danger-color);">과거이력</td>
                     <td>
