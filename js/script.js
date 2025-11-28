@@ -261,15 +261,18 @@ function toggleShortTermRent() {
 
 // 모달 내 단기가능여부 변경 시 단기월세 필드 표시/숨김
 function toggleModalShortTermRent() {
-    const shortTermAvailable = document.querySelector('input[name="modalShortTermAvailable"]:checked');
+    const shortTermAvailableRadio = document.querySelector('input[name="modalShortTermAvailable"]:checked');
     const shortTermRentGroup = document.getElementById('modalShortTermRentGroup');
     
-    if (shortTermAvailable && shortTermAvailable.value === 'Y') {
+    if (!shortTermRentGroup) return;
+    
+    if (shortTermAvailableRadio && shortTermAvailableRadio.value === 'Y') {
         shortTermRentGroup.style.display = 'block';
     } else {
         shortTermRentGroup.style.display = 'none';
         const shortTermRentInput = document.getElementById('modalShortTermRent');
-        if (shortTermRentInput) {
+        if (shortTermRentInput && (!shortTermAvailableRadio || shortTermAvailableRadio.value === 'N')) {
+            // N으로 변경될 때만 값 초기화 (Y일 때는 기존 값 유지)
             shortTermRentInput.value = '';
         }
     }
@@ -401,8 +404,11 @@ async function addProperty() {
     const optionCheckboxes = document.querySelectorAll('input[name="option"]:checked');
     const options = Array.from(optionCheckboxes).map(cb => cb.value);
 
-    const shortTermAvailable = document.querySelector('input[name="shortTermAvailable"]:checked');
-    const shortTermRent = document.getElementById('shortTermRent').value || '';
+    // 단기가능여부 값 가져오기
+    const shortTermAvailableRadio = document.querySelector('input[name="shortTermAvailable"]:checked');
+    const shortTermAvailable = shortTermAvailableRadio ? shortTermAvailableRadio.value : 'N';
+    const shortTermRentInput = document.getElementById('shortTermRent');
+    const shortTermRent = shortTermRentInput ? shortTermRentInput.value.trim() : '';
 
     const property = {
         buildingName: document.getElementById('buildingName').value,
@@ -416,7 +422,7 @@ async function addProperty() {
         options: options,
         notes: document.getElementById('notes').value || '',
         contact: document.getElementById('contact').value || '',
-        shortTermAvailable: shortTermAvailable ? shortTermAvailable.value : 'N',
+        shortTermAvailable: shortTermAvailable,
         shortTermRent: shortTermRent
     };
 
@@ -915,7 +921,7 @@ async function viewProperty(id) {
                     <label>단기가능여부</label>
                     <div class="radio-group" style="display: flex; gap: 20px; margin-top: 8px;">
                         <label class="radio-label" style="display: flex; align-items: center; gap: 5px;">
-                            <input type="radio" name="modalShortTermAvailable" value="N" ${(property.shortTermAvailable || 'N') === 'N' ? 'checked' : ''} onchange="toggleModalShortTermRent()" ${readonlyAttr}>
+                            <input type="radio" name="modalShortTermAvailable" value="N" ${(!property.shortTermAvailable || property.shortTermAvailable === 'N') ? 'checked' : ''} onchange="toggleModalShortTermRent()" ${readonlyAttr}>
                             <span>N</span>
                         </label>
                         <label class="radio-label" style="display: flex; align-items: center; gap: 5px;">
@@ -977,7 +983,18 @@ async function viewProperty(id) {
                 });
             }
             // 모달 내 단기가능여부 초기 상태 설정
-            toggleModalShortTermRent();
+            setTimeout(() => {
+                const shortTermRentGroup = document.getElementById('modalShortTermRentGroup');
+                const shortTermAvailableRadio = document.querySelector('input[name="modalShortTermAvailable"]:checked');
+                
+                if (shortTermRentGroup && shortTermAvailableRadio) {
+                    if (shortTermAvailableRadio.value === 'Y') {
+                        shortTermRentGroup.style.display = 'block';
+                    } else {
+                        shortTermRentGroup.style.display = 'none';
+                    }
+                }
+            }, 50);
         }, 100);
     }
 
@@ -1006,8 +1023,12 @@ function updateModalDongType() {
 async function updateProperty(id) {
     const optionCheckboxes = document.querySelectorAll('input[name="modalOption"]:checked');
     const options = Array.from(optionCheckboxes).map(cb => cb.value);
-    const shortTermAvailable = document.querySelector('input[name="modalShortTermAvailable"]:checked');
-    const shortTermRent = document.getElementById('modalShortTermRent') ? document.getElementById('modalShortTermRent').value || '' : '';
+    
+    // 단기가능여부 값 가져오기
+    const shortTermAvailableRadio = document.querySelector('input[name="modalShortTermAvailable"]:checked');
+    const shortTermAvailable = shortTermAvailableRadio ? shortTermAvailableRadio.value : 'N';
+    const shortTermRentInput = document.getElementById('modalShortTermRent');
+    const shortTermRent = shortTermRentInput ? shortTermRentInput.value.trim() : '';
 
     const updatedProperty = {
         buildingName: document.getElementById('modalBuildingName').value,
@@ -1021,7 +1042,7 @@ async function updateProperty(id) {
         options: options,
         notes: document.getElementById('modalNotes').value,
         contact: document.getElementById('modalContact').value,
-        shortTermAvailable: shortTermAvailable ? shortTermAvailable.value : 'N',
+        shortTermAvailable: shortTermAvailable,
         shortTermRent: shortTermRent
     };
 
