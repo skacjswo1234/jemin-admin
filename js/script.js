@@ -8,7 +8,8 @@ const API_BASE_URL = '';
 const buildingDongTypes = {
     '타워더모스트': ['A타입', 'B타입', 'C타입', 'D타입'],
     '해링턴타워': ['101동', '102동', '103동'],
-    'KCC하버뷰': ['101동', '102동', '원룸형(도생)', '원룸형(오피)']
+    'KCC하버뷰': ['101동', '102동', '원룸형(도생)', '원룸형(오피)'],
+    '청일디오브': ['원룸', '투룸']
 };
 
 // 매물 옵션 목록
@@ -245,6 +246,35 @@ function toggleFullOption() {
     });
 }
 
+// 단기가능여부 변경 시 단기월세 필드 표시/숨김
+function toggleShortTermRent() {
+    const shortTermAvailable = document.querySelector('input[name="shortTermAvailable"]:checked');
+    const shortTermRentGroup = document.getElementById('shortTermRentGroup');
+    
+    if (shortTermAvailable && shortTermAvailable.value === 'Y') {
+        shortTermRentGroup.style.display = 'block';
+    } else {
+        shortTermRentGroup.style.display = 'none';
+        document.getElementById('shortTermRent').value = '';
+    }
+}
+
+// 모달 내 단기가능여부 변경 시 단기월세 필드 표시/숨김
+function toggleModalShortTermRent() {
+    const shortTermAvailable = document.querySelector('input[name="modalShortTermAvailable"]:checked');
+    const shortTermRentGroup = document.getElementById('modalShortTermRentGroup');
+    
+    if (shortTermAvailable && shortTermAvailable.value === 'Y') {
+        shortTermRentGroup.style.display = 'block';
+    } else {
+        shortTermRentGroup.style.display = 'none';
+        const shortTermRentInput = document.getElementById('modalShortTermRent');
+        if (shortTermRentInput) {
+            shortTermRentInput.value = '';
+        }
+    }
+}
+
 // 등록 폼: 건물 선택 시 동/타입 옵션 업데이트
 function updateDongTypeOptions() {
     const buildingSelect = document.getElementById('buildingName');
@@ -297,7 +327,7 @@ function onBuildingChange() {
 // 건물 필터 업데이트 (고정된 건물 목록 사용)
 function updateBuildingFilter() {
     const filterBuilding = document.getElementById('filterBuilding');
-    const buildings = ['타워더모스트', '해링턴타워', 'KCC하버뷰'];
+    const buildings = ['타워더모스트', '해링턴타워', 'KCC하버뷰', '청일디오브'];
     
     filterBuilding.innerHTML = '<option value="">전체 건물</option>';
     buildings.forEach(building => {
@@ -371,6 +401,9 @@ async function addProperty() {
     const optionCheckboxes = document.querySelectorAll('input[name="option"]:checked');
     const options = Array.from(optionCheckboxes).map(cb => cb.value);
 
+    const shortTermAvailable = document.querySelector('input[name="shortTermAvailable"]:checked');
+    const shortTermRent = document.getElementById('shortTermRent').value || '';
+
     const property = {
         buildingName: document.getElementById('buildingName').value,
         dongType: document.getElementById('dongType').value,
@@ -382,7 +415,9 @@ async function addProperty() {
         status: document.getElementById('status').value,
         options: options,
         notes: document.getElementById('notes').value || '',
-        contact: document.getElementById('contact').value || ''
+        contact: document.getElementById('contact').value || '',
+        shortTermAvailable: shortTermAvailable ? shortTermAvailable.value : 'N',
+        shortTermRent: shortTermRent
     };
 
     try {
@@ -400,6 +435,8 @@ async function addProperty() {
         document.getElementById('propertyForm').reset();
         document.getElementById('dongType').disabled = true;
         document.getElementById('dongType').innerHTML = '<option value="">건물을 먼저 선택하세요</option>';
+        document.getElementById('shortTermRentGroup').style.display = 'none';
+        document.querySelector('input[name="shortTermAvailable"][value="N"]').checked = true;
         
         showNotification('매물이 성공적으로 등록되었습니다!', 'success');
         
@@ -504,7 +541,7 @@ function renderPropertiesList() {
                     <div class="property-card-header">
                         <div class="property-card-title">
                             <h4>${property.buildingName || '미등록'} ${property.dongType || ''} ${property.roomNumber || ''}호</h4>
-                            <p>${property.contact || '-'}</p>
+                            <p>${property.contact || '-'}${property.shortTermAvailable === 'Y' ? ` (단기: ${property.shortTermAvailable}${property.shortTermRent ? ' - ' + property.shortTermRent : ''})` : property.shortTermAvailable === 'N' ? ` (단기: ${property.shortTermAvailable})` : ''}</p>
                         </div>
                         <div class="property-card-price">${(property.deposit || 0).toLocaleString()}/${(property.monthlyRent || 0).toLocaleString()}</div>
                     </div>
@@ -566,7 +603,7 @@ function renderPropertiesList() {
                     <td>${(property.monthlyRent || 0).toLocaleString()}만</td>
                     <td>${property.moveIn || '-'}</td>
                     <td><span class="status-badge ${getStatusClass(property.status)}">${property.status || '미정'}</span></td>
-                    <td>${property.contact || '-'}</td>
+                    <td>${property.contact || '-'}${property.shortTermAvailable === 'Y' ? ` (단기: ${property.shortTermAvailable}${property.shortTermRent ? ' - ' + property.shortTermRent : ''})` : property.shortTermAvailable === 'N' ? ` (단기: ${property.shortTermAvailable})` : ''}</td>
                     <td>${formatDate(property.createdAt)}</td>
                     <td>
                         <div class="action-buttons">
@@ -821,6 +858,7 @@ async function viewProperty(id) {
                         <option value="타워더모스트" ${property.buildingName === '타워더모스트' ? 'selected' : ''}>타워더모스트</option>
                         <option value="해링턴타워" ${property.buildingName === '해링턴타워' ? 'selected' : ''}>해링턴타워</option>
                         <option value="KCC하버뷰" ${property.buildingName === 'KCC하버뷰' ? 'selected' : ''}>KCC하버뷰</option>
+                        <option value="청일디오브" ${property.buildingName === '청일디오브' ? 'selected' : ''}>청일디오브</option>
                     </select>
                 </div>
                 
@@ -873,6 +911,25 @@ async function viewProperty(id) {
                     <input type="text" id="modalContact" value="${property.contact || ''}" ${readonlyAttr} required style="${readonlyStyle}">
                 </div>
                 
+                <div class="form-group">
+                    <label>단기가능여부</label>
+                    <div class="radio-group" style="display: flex; gap: 20px; margin-top: 8px;">
+                        <label class="radio-label" style="display: flex; align-items: center; gap: 5px;">
+                            <input type="radio" name="modalShortTermAvailable" value="N" ${(property.shortTermAvailable || 'N') === 'N' ? 'checked' : ''} onchange="toggleModalShortTermRent()" ${readonlyAttr}>
+                            <span>N</span>
+                        </label>
+                        <label class="radio-label" style="display: flex; align-items: center; gap: 5px;">
+                            <input type="radio" name="modalShortTermAvailable" value="Y" ${property.shortTermAvailable === 'Y' ? 'checked' : ''} onchange="toggleModalShortTermRent()" ${readonlyAttr}>
+                            <span>Y</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="form-group" id="modalShortTermRentGroup" style="display: ${property.shortTermAvailable === 'Y' ? 'block' : 'none'};">
+                    <label for="modalShortTermRent">단기월세</label>
+                    <input type="text" id="modalShortTermRent" value="${property.shortTermRent || ''}" ${readonlyAttr} placeholder="예: 1개월 50만원, 3개월 45만원" style="${readonlyStyle}">
+                </div>
+                
                 <div class="form-group full-width">
                     <label>옵션</label>
                     <div class="checkbox-group">
@@ -919,6 +976,8 @@ async function viewProperty(id) {
                     updateProperty(property.id);
                 });
             }
+            // 모달 내 단기가능여부 초기 상태 설정
+            toggleModalShortTermRent();
         }, 100);
     }
 
@@ -947,6 +1006,8 @@ function updateModalDongType() {
 async function updateProperty(id) {
     const optionCheckboxes = document.querySelectorAll('input[name="modalOption"]:checked');
     const options = Array.from(optionCheckboxes).map(cb => cb.value);
+    const shortTermAvailable = document.querySelector('input[name="modalShortTermAvailable"]:checked');
+    const shortTermRent = document.getElementById('modalShortTermRent') ? document.getElementById('modalShortTermRent').value || '' : '';
 
     const updatedProperty = {
         buildingName: document.getElementById('modalBuildingName').value,
@@ -959,7 +1020,9 @@ async function updateProperty(id) {
         status: document.getElementById('modalStatus').value,
         options: options,
         notes: document.getElementById('modalNotes').value,
-        contact: document.getElementById('modalContact').value
+        contact: document.getElementById('modalContact').value,
+        shortTermAvailable: shortTermAvailable ? shortTermAvailable.value : 'N',
+        shortTermRent: shortTermRent
     };
 
     try {
@@ -1051,7 +1114,7 @@ function updateHistoryBuildingFilter() {
     const filterBuilding = document.getElementById('historyFilterBuilding');
     if (!filterBuilding) return;
     
-    const buildings = ['타워더모스트', '해링턴타워', 'KCC하버뷰'];
+    const buildings = ['타워더모스트', '해링턴타워', 'KCC하버뷰', '청일디오브'];
     
     filterBuilding.innerHTML = '<option value="">전체 건물</option>';
     buildings.forEach(building => {
@@ -1139,7 +1202,7 @@ async function renderHistoryList() {
                     <div class="property-card-header">
                         <div class="property-card-title">
                             <h4>${property.buildingName || '미등록'} ${property.dongType || ''} ${property.roomNumber || ''}호</h4>
-                            <p>${property.contact || '-'}</p>
+                            <p>${property.contact || '-'}${property.shortTermAvailable === 'Y' ? ` (단기: ${property.shortTermAvailable}${property.shortTermRent ? ' - ' + property.shortTermRent : ''})` : property.shortTermAvailable === 'N' ? ` (단기: ${property.shortTermAvailable})` : ''}</p>
                         </div>
                         <div class="property-card-price">${(property.deposit || 0).toLocaleString()}/${(property.monthlyRent || 0).toLocaleString()}</div>
                     </div>
@@ -1200,7 +1263,7 @@ async function renderHistoryList() {
                     <td>${(property.monthlyRent || 0).toLocaleString()}만</td>
                     <td>${property.moveIn || '-'}</td>
                     <td><span class="status-badge ${getStatusClass(property.status)}">${property.status || '미정'}</span></td>
-                    <td>${property.contact || '-'}</td>
+                    <td>${property.contact || '-'}${property.shortTermAvailable === 'Y' ? ` (단기: ${property.shortTermAvailable}${property.shortTermRent ? ' - ' + property.shortTermRent : ''})` : property.shortTermAvailable === 'N' ? ` (단기: ${property.shortTermAvailable})` : ''}</td>
                     <td>${formatDate(property.createdAt)}</td>
                     <td style="color: var(--danger-color);">과거이력</td>
                     <td>
@@ -1412,24 +1475,27 @@ async function deleteAccount(username) {
 // 엑셀 샘플 파일 다운로드
 function downloadExcelSample() {
     const sampleData = [
-        ['✅ 필수입력', '✅ 필수입력', '선택입력', '선택입력', '선택입력', '선택입력', '선택입력', '선택입력', '선택입력', '선택입력', '선택입력'],
-        ['건물명', '동/타입', '호수', '보증금(만원)', '월세(만원)', '비밀번호', '전입유무', '상태', '연락처', '옵션', '특이사항'],
-        ['⬇️ 정확히 입력', '⬇️ 정확히 입력', '', '', '', '', '전입/미전입', '공실/임대중/계약대기', '', '⬇️ 쉼표로 구분', ''],
-        ['타워더모스트', 'A타입', '1503', '5000', '50', '1234*', '전입', '공실', '010-1234-5678', '냉장고, 세탁기, 에어컨', '남향, 신축'],
-        ['', '', '', '', '', '', '', '', '', '', ''],
-        ['', '', '', '', '', '', '', '', '', '', ''],
-        ['📌 건물별 동/타입 목록 (반드시 아래 목록에서 선택)', '', '', '', '', '', '', '', '', '', ''],
-        ['', '', '', '', '', '', '', '', '', '', ''],
-        ['타워더모스트', '➡️ A타입, B타입, C타입, D타입', '', '', '', '', '', '', '', '', ''],
-        ['해링턴타워', '➡️ 101동, 102동, 103동', '', '', '', '', '', '', '', '', ''],
-        ['KCC하버뷰', '➡️ 101동, 102동, 원룸형(도생), 원룸형(오피)', '', '', '', '', '', '', '', '', ''],
-        ['', '', '', '', '', '', '', '', '', '', ''],
-        ['💡 작성 가이드', '', '', '', '', '', '', '', '', '', ''],
-        ['- 건물명과 동/타입은 반드시 입력해야 합니다', '', '', '', '', '', '', '', '', '', ''],
-        ['- 나머지 항목은 선택입력이며 비워둘 수 있습니다', '', '', '', '', '', '', '', '', '', ''],
-        ['- 전입유무: 전입 또는 미전입 (비우면 기본값 미전입)', '', '', '', '', '', '', '', '', '', ''],
-        ['- 상태: 공실, 임대중, 계약대기 중 선택 (비우면 기본값 공실)', '', '', '', '', '', '', '', '', '', ''],
-        ['- 옵션: 냉장고, 세탁기, 에어컨, 인덕션, 전자레인지, 책상, 침대, 옷장 중 선택 (여러개는 쉼표로 구분)', '', '', '', '', '', '', '', '', '', '']
+        ['✅ 필수입력', '✅ 필수입력', '선택입력', '선택입력', '선택입력', '선택입력', '선택입력', '선택입력', '선택입력', '선택입력', '선택입력', '선택입력', '선택입력'],
+        ['건물명', '동/타입', '호수', '보증금(만원)', '월세(만원)', '비밀번호', '전입유무', '상태', '연락처', '단기가능여부', '단기월세', '옵션', '특이사항'],
+        ['⬇️ 정확히 입력', '⬇️ 정확히 입력', '', '', '', '', '전입/미전입', '공실/임대중/계약대기', '', 'Y/N', 'Y일 경우 입력', '⬇️ 쉼표로 구분', ''],
+        ['타워더모스트', 'A타입', '1503', '5000', '50', '1234*', '전입', '공실', '010-1234-5678', 'N', '', '냉장고, 세탁기, 에어컨', '남향, 신축'],
+        ['', '', '', '', '', '', '', '', '', '', '', '', ''],
+        ['', '', '', '', '', '', '', '', '', '', '', '', ''],
+        ['📌 건물별 동/타입 목록 (반드시 아래 목록에서 선택)', '', '', '', '', '', '', '', '', '', '', '', ''],
+        ['', '', '', '', '', '', '', '', '', '', '', '', ''],
+        ['타워더모스트', '➡️ A타입, B타입, C타입, D타입', '', '', '', '', '', '', '', '', '', '', ''],
+        ['해링턴타워', '➡️ 101동, 102동, 103동', '', '', '', '', '', '', '', '', '', '', ''],
+        ['KCC하버뷰', '➡️ 101동, 102동, 원룸형(도생), 원룸형(오피)', '', '', '', '', '', '', '', '', '', '', ''],
+        ['청일디오브', '➡️ 원룸, 투룸', '', '', '', '', '', '', '', '', '', '', ''],
+        ['', '', '', '', '', '', '', '', '', '', '', '', ''],
+        ['💡 작성 가이드', '', '', '', '', '', '', '', '', '', '', '', ''],
+        ['- 건물명과 동/타입은 반드시 입력해야 합니다', '', '', '', '', '', '', '', '', '', '', '', ''],
+        ['- 나머지 항목은 선택입력이며 비워둘 수 있습니다', '', '', '', '', '', '', '', '', '', '', '', ''],
+        ['- 전입유무: 전입 또는 미전입 (비우면 기본값 미전입)', '', '', '', '', '', '', '', '', '', '', '', ''],
+        ['- 상태: 공실, 임대중, 계약대기 중 선택 (비우면 기본값 공실)', '', '', '', '', '', '', '', '', '', '', '', ''],
+        ['- 단기가능여부: Y 또는 N (비우면 기본값 N)', '', '', '', '', '', '', '', '', '', '', '', ''],
+        ['- 단기월세: 단기가능여부가 Y일 경우 입력 (예: 1개월 50만원, 3개월 45만원)', '', '', '', '', '', '', '', '', '', '', '', ''],
+        ['- 옵션: 냉장고, 세탁기, 에어컨, 인덕션, 전자레인지, 책상, 침대, 옷장 중 선택 (여러개는 쉼표로 구분)', '', '', '', '', '', '', '', '', '', '', '', '']
     ];
 
     // 워크북 생성
@@ -1447,6 +1513,8 @@ function downloadExcelSample() {
         { wch: 10 },  // 전입유무
         { wch: 10 },  // 상태
         { wch: 15 },  // 연락처
+        { wch: 12 },  // 단기가능여부
+        { wch: 30 },  // 단기월세
         { wch: 30 },  // 옵션
         { wch: 30 }   // 특이사항
     ];
@@ -1525,7 +1593,7 @@ function handleExcelUpload(event) {
             const validStatus = ['공실', '임대중', '계약대기'];
             
             const properties = rows.map((row, index) => {
-                const [buildingName, dongType, roomNumber, deposit, monthlyRent, password, moveIn, status, contact, options, notes] = row;
+                const [buildingName, dongType, roomNumber, deposit, monthlyRent, password, moveIn, status, contact, shortTermAvailable, shortTermRent, options, notes] = row;
                 const rowNum = index + 4; // 엑셀 행 번호 (헤더 3행 포함)
                 
                 // 필수 필드 검증 (건물명, 동/타입만 필수)
@@ -1549,6 +1617,8 @@ function handleExcelUpload(event) {
                 // 선택 필드 처리 (입력값이 있을 경우에만 검증)
                 const trimmedMoveIn = moveIn ? String(moveIn).trim() : '미전입';
                 const trimmedStatus = status ? String(status).trim() : '공실';
+                const trimmedShortTermAvailable = shortTermAvailable ? String(shortTermAvailable).trim().toUpperCase() : 'N';
+                const trimmedShortTermRent = shortTermRent ? String(shortTermRent).trim() : '';
                 
                 // 전입유무 검증 (입력된 경우)
                 if (moveIn && !validMoveIn.includes(trimmedMoveIn)) {
@@ -1558,6 +1628,11 @@ function handleExcelUpload(event) {
                 // 상태 검증 (입력된 경우)
                 if (status && !validStatus.includes(trimmedStatus)) {
                     throw new Error(`${rowNum}번째 행: 상태가 올바르지 않습니다. (${trimmedStatus})\n허용된 값: ${validStatus.join(', ')}`);
+                }
+                
+                // 단기가능여부 검증 (입력된 경우)
+                if (shortTermAvailable && !['Y', 'N'].includes(trimmedShortTermAvailable)) {
+                    throw new Error(`${rowNum}번째 행: 단기가능여부가 올바르지 않습니다. (${trimmedShortTermAvailable})\n허용된 값: Y, N`);
                 }
                 
                 // 보증금, 월세 처리 (숫자가 아니면 0)
@@ -1584,6 +1659,8 @@ function handleExcelUpload(event) {
                     moveIn: trimmedMoveIn,
                     status: trimmedStatus,
                     contact: contact ? String(contact).trim() : '',
+                    shortTermAvailable: trimmedShortTermAvailable,
+                    shortTermRent: trimmedShortTermRent,
                     options: optionsArray,
                     notes: notes ? String(notes).trim() : ''
                 };
@@ -1739,7 +1816,7 @@ function exportToExcel() {
     excelData.push([
         '번호', '건물명', '동/타입', '호수', 
         '보증금(만원)', '월세(만원)', '비밀번호', 
-        '전입유무', '상태', '연락처', '옵션', '특이사항', '등록일'
+        '전입유무', '상태', '연락처', '단기가능여부', '단기월세', '옵션', '특이사항', '등록일'
     ]);
 
     // 데이터 행
@@ -1755,6 +1832,8 @@ function exportToExcel() {
             property.moveIn || '',
             property.status || '',
             property.contact || '',
+            property.shortTermAvailable || 'N',
+            property.shortTermRent || '',
             property.options ? property.options.join(', ') : '',
             property.notes || '',
             formatDate(property.createdAt)
@@ -1777,6 +1856,8 @@ function exportToExcel() {
         { wch: 10 },  // 전입유무
         { wch: 10 },  // 상태
         { wch: 15 },  // 연락처
+        { wch: 12 },  // 단기가능여부
+        { wch: 30 },  // 단기월세
         { wch: 20 },  // 옵션
         { wch: 30 },  // 특이사항
         { wch: 12 }   // 등록일

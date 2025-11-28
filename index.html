@@ -190,6 +190,7 @@
                                     <option value="타워더모스트">타워더모스트</option>
                                     <option value="해링턴타워">해링턴타워</option>
                                     <option value="KCC하버뷰">KCC하버뷰</option>
+                                    <option value="청일디오브">청일디오브</option>
                                 </select>
                             </div>
 
@@ -240,6 +241,25 @@
                             <div class="form-group">
                                 <label for="contact">연락처</label>
                                 <input type="tel" id="contact" placeholder="예: 010-1234-5678">
+                            </div>
+
+                            <div class="form-group">
+                                <label>단기가능여부</label>
+                                <div class="radio-group" style="display: flex; gap: 20px; margin-top: 8px;">
+                                    <label class="radio-label" style="display: flex; align-items: center; gap: 5px;">
+                                        <input type="radio" name="shortTermAvailable" value="N" checked onchange="toggleShortTermRent()">
+                                        <span>N</span>
+                                    </label>
+                                    <label class="radio-label" style="display: flex; align-items: center; gap: 5px;">
+                                        <input type="radio" name="shortTermAvailable" value="Y" onchange="toggleShortTermRent()">
+                                        <span>Y</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="form-group" id="shortTermRentGroup" style="display: none;">
+                                <label for="shortTermRent">단기월세</label>
+                                <input type="text" id="shortTermRent" placeholder="예: 1개월 50만원, 3개월 45만원">
                             </div>
 
                             <div class="form-group full-width">
