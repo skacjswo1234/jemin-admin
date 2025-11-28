@@ -426,6 +426,10 @@ async function addProperty() {
         shortTermRent: shortTermRent
     };
 
+    // 디버깅: 전송할 데이터 확인
+    console.log('매물 등록 데이터:', property);
+    console.log('단기가능여부:', shortTermAvailable, '단기월세:', shortTermRent);
+
     try {
         const response = await fetch(`${API_BASE_URL}/api/properties`, {
             method: 'POST',
@@ -1045,6 +1049,10 @@ async function updateProperty(id) {
         shortTermAvailable: shortTermAvailable,
         shortTermRent: shortTermRent
     };
+
+    // 디버깅: 전송할 데이터 확인
+    console.log('매물 수정 데이터:', updatedProperty);
+    console.log('단기가능여부:', shortTermAvailable, '단기월세:', shortTermRent);
 
     try {
         const response = await fetch(`${API_BASE_URL}/api/properties/${id}`, {

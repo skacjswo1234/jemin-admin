@@ -58,7 +58,9 @@ export async function onRequestPut(context) {
       status, 
       options, 
       notes, 
-      contact 
+      contact,
+      shortTermAvailable,
+      shortTermRent
     } = data;
     
     const optionsJson = JSON.stringify(options || []);
@@ -67,7 +69,7 @@ export async function onRequestPut(context) {
       `UPDATE properties 
        SET buildingName = ?, dongType = ?, roomNumber = ?, deposit = ?, 
            monthlyRent = ?, password = ?, moveIn = ?, status = ?, 
-           options = ?, notes = ?, contact = ?
+           options = ?, notes = ?, contact = ?, shortTermAvailable = ?, shortTermRent = ?
        WHERE id = ?`
     ).bind(
       buildingName, 
@@ -81,6 +83,8 @@ export async function onRequestPut(context) {
       optionsJson, 
       notes || null, 
       contact,
+      shortTermAvailable || 'N',
+      shortTermRent || null,
       id
     ).run();
     
