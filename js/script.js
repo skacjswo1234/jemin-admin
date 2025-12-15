@@ -9,7 +9,8 @@ const buildingDongTypes = {
     '타워더모스트': ['A타입', 'B타입', 'C타입', 'D타입'],
     '해링턴타워': ['101동', '102동', '103동'],
     'KCC하버뷰': ['101동', '102동', '원룸형(도생)', '원룸형(오피)'],
-    '청일디오브': ['원룸', '투룸']
+    '청일디오브': ['원룸', '투룸'],
+    '테라스타오션': ['원룸(전면)', '원룸(사이드)']
 };
 
 // 매물 옵션 목록
@@ -330,7 +331,7 @@ function onBuildingChange() {
 // 건물 필터 업데이트 (고정된 건물 목록 사용)
 function updateBuildingFilter() {
     const filterBuilding = document.getElementById('filterBuilding');
-    const buildings = ['타워더모스트', '해링턴타워', 'KCC하버뷰', '청일디오브'];
+    const buildings = ['타워더모스트', '해링턴타워', 'KCC하버뷰', '청일디오브', '테라스타오션'];
     
     filterBuilding.innerHTML = '<option value="">전체 건물</option>';
     buildings.forEach(building => {
@@ -869,6 +870,7 @@ async function viewProperty(id) {
                         <option value="해링턴타워" ${property.buildingName === '해링턴타워' ? 'selected' : ''}>해링턴타워</option>
                         <option value="KCC하버뷰" ${property.buildingName === 'KCC하버뷰' ? 'selected' : ''}>KCC하버뷰</option>
                         <option value="청일디오브" ${property.buildingName === '청일디오브' ? 'selected' : ''}>청일디오브</option>
+                        <option value="테라스타오션" ${property.buildingName === '테라스타오션' ? 'selected' : ''}>테라스타오션</option>
                     </select>
                 </div>
                 
@@ -1143,7 +1145,7 @@ function updateHistoryBuildingFilter() {
     const filterBuilding = document.getElementById('historyFilterBuilding');
     if (!filterBuilding) return;
     
-    const buildings = ['타워더모스트', '해링턴타워', 'KCC하버뷰', '청일디오브'];
+    const buildings = ['타워더모스트', '해링턴타워', 'KCC하버뷰', '청일디오브', '테라스타오션'];
     
     filterBuilding.innerHTML = '<option value="">전체 건물</option>';
     buildings.forEach(building => {
@@ -1516,6 +1518,7 @@ function downloadExcelSample() {
         ['해링턴타워', '➡️ 101동, 102동, 103동', '', '', '', '', '', '', '', '', '', '', ''],
         ['KCC하버뷰', '➡️ 101동, 102동, 원룸형(도생), 원룸형(오피)', '', '', '', '', '', '', '', '', '', '', ''],
         ['청일디오브', '➡️ 원룸, 투룸', '', '', '', '', '', '', '', '', '', '', ''],
+        ['테라스타오션', '➡️ 원룸(전면), 원룸(사이드)', '', '', '', '', '', '', '', '', '', '', ''],
         ['', '', '', '', '', '', '', '', '', '', '', '', ''],
         ['💡 작성 가이드', '', '', '', '', '', '', '', '', '', '', '', ''],
         ['- 건물명과 동/타입은 반드시 입력해야 합니다', '', '', '', '', '', '', '', '', '', '', '', ''],
