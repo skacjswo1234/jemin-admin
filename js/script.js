@@ -411,10 +411,35 @@ async function addProperty() {
     const shortTermRentInput = document.getElementById('shortTermRent');
     const shortTermRent = shortTermRentInput ? shortTermRentInput.value.trim() : '';
 
+    const buildingName = document.getElementById('buildingName').value;
+    const dongType = document.getElementById('dongType').value;
+    const roomNumber = document.getElementById('roomNumber').value || '';
+
+    // 중복 체크: 건물명, 동/타입, 호수가 모두 일치하는 매물이 있는지 확인
+    const duplicateProperty = properties.find(p => {
+        const pBuildingName = (p.buildingName || '').trim();
+        const pDongType = (p.dongType || '').trim();
+        const pRoomNumber = (p.roomNumber || '').trim();
+        
+        const inputBuildingName = buildingName.trim();
+        const inputDongType = dongType.trim();
+        const inputRoomNumber = roomNumber.trim();
+        
+        return pBuildingName === inputBuildingName && 
+               pDongType === inputDongType && 
+               pRoomNumber === inputRoomNumber;
+    });
+
+    // 중복이 있으면 경고 모달 표시하고 등록 중단
+    if (duplicateProperty) {
+        showDuplicateModal(buildingName, dongType, roomNumber);
+        return;
+    }
+
     const property = {
-        buildingName: document.getElementById('buildingName').value,
-        dongType: document.getElementById('dongType').value,
-        roomNumber: document.getElementById('roomNumber').value || '',
+        buildingName: buildingName,
+        dongType: dongType,
+        roomNumber: roomNumber,
         deposit: parseInt(document.getElementById('deposit').value) || 0,
         monthlyRent: parseInt(document.getElementById('monthlyRent').value) || 0,
         password: document.getElementById('password').value || '',
@@ -468,6 +493,22 @@ async function addProperty() {
         console.error('매물 등록 오류:', error);
         showNotification('매물 등록에 실패했습니다.', 'error');
     }
+}
+
+// 중복 경고 모달 표시
+function showDuplicateModal(buildingName, dongType, roomNumber) {
+    document.getElementById('duplicateBuildingName').textContent = buildingName || '미입력';
+    document.getElementById('duplicateDongType').textContent = dongType || '미입력';
+    document.getElementById('duplicateRoomNumber').textContent = roomNumber || '미입력';
+    
+    const modal = document.getElementById('duplicateModal');
+    modal.classList.add('active');
+}
+
+// 중복 경고 모달 닫기
+function closeDuplicateModal() {
+    const modal = document.getElementById('duplicateModal');
+    modal.classList.remove('active');
 }
 
 // 대시보드 업데이트
@@ -1090,6 +1131,11 @@ window.addEventListener('click', function(e) {
     const modal = document.getElementById('propertyModal');
     if (e.target === modal) {
         closeModal();
+    }
+    
+    const duplicateModal = document.getElementById('duplicateModal');
+    if (e.target === duplicateModal) {
+        closeDuplicateModal();
     }
 });
 

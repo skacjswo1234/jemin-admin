@@ -623,6 +623,43 @@
         </div>
     </div>
 
+    <!-- 중복 경고 모달 -->
+    <div class="modal" id="duplicateModal">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3 style="color: var(--danger-color);">
+                    <i class="fas fa-exclamation-triangle"></i> 중복 등록 경고
+                </h3>
+                <button class="modal-close" onclick="closeDuplicateModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div style="padding: 20px; text-align: center;">
+                    <div style="font-size: 48px; color: var(--danger-color); margin-bottom: 15px;">
+                        <i class="fas fa-exclamation-circle"></i>
+                    </div>
+                    <p style="font-size: 16px; margin-bottom: 10px; font-weight: 600;">
+                        동일한 매물이 이미 등록되어 있습니다.
+                    </p>
+                    <div style="background-color: var(--bg-tertiary); padding: 15px; border-radius: 8px; margin: 20px 0;">
+                        <p style="margin: 5px 0;"><strong>건물명:</strong> <span id="duplicateBuildingName"></span></p>
+                        <p style="margin: 5px 0;"><strong>동/타입:</strong> <span id="duplicateDongType"></span></p>
+                        <p style="margin: 5px 0;"><strong>호수:</strong> <span id="duplicateRoomNumber"></span></p>
+                    </div>
+                    <p style="color: var(--text-secondary); font-size: 14px;">
+                        중복된 매물은 등록할 수 없습니다.
+                    </p>
+                </div>
+                <div class="form-actions" style="justify-content: center; margin-top: 20px;">
+                    <button type="button" class="btn btn-primary" onclick="closeDuplicateModal()">
+                        <i class="fas fa-check"></i> 확인
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- SheetJS 라이브러리 (엑셀 다운로드) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="js/script.js"></script>
