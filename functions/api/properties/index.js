@@ -94,7 +94,9 @@ export async function onRequestPost(context) {
       notes, 
       contact,
       shortTermAvailable,
-      shortTermRent
+      shortTermRent,
+      dealType,
+      salePrice
     } = data;
     
     // 필수 필드 검증 (건물명과 동/타입만 필수)
@@ -113,8 +115,8 @@ export async function onRequestPost(context) {
     // 트랜잭션으로 안전하게 처리 (del_yn 기본값 'N' 포함)
     const result = await env.DB.prepare(
       `INSERT INTO properties 
-       (buildingName, dongType, roomNumber, deposit, monthlyRent, password, moveIn, status, options, notes, contact, shortTermAvailable, shortTermRent, del_yn) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'N')`
+       (buildingName, dongType, roomNumber, deposit, monthlyRent, password, moveIn, status, options, notes, contact, shortTermAvailable, shortTermRent, dealType, salePrice, del_yn) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'N')`
     ).bind(
       buildingName, 
       dongType, 
@@ -128,7 +130,9 @@ export async function onRequestPost(context) {
       notes || null, 
       contact || '',
       shortTermAvailable || 'N',
-      shortTermRent || null
+      shortTermRent || null,
+      dealType || '월세',
+      salePrice ?? null
     ).run();
     
     // 성공 응답에 새로 생성된 데이터 포함
@@ -147,6 +151,8 @@ export async function onRequestPost(context) {
       contact,
       shortTermAvailable: shortTermAvailable || 'N',
       shortTermRent: shortTermRent || null,
+      dealType: dealType || '월세',
+      salePrice: salePrice ?? null,
       createdAt: new Date().toISOString()
     };
     

@@ -110,6 +110,18 @@ wrangler pages deploy . --project-name=jemin-admin
 
 ## 📊 D1 데이터베이스 관리
 
+### 스키마 업데이트 (수정일, 거래유형/매매)
+
+이미 배포된 DB에 **수정일(updatedAt)** 및 **거래유형(dealType)/매매가(salePrice)** 컬럼을 추가하려면 아래를 순서대로 실행하세요.
+
+```bash
+# 수정일 컬럼 추가 (매물 수정 시 수정일 저장)
+wrangler d1 execute jemin-db --remote --file=./schema_add_updatedAt.sql
+
+# 거래유형(월세/전세/매매), 매매가 컬럼 추가
+wrangler d1 execute jemin-db --remote --file=./schema_add_dealtype.sql
+```
+
 ### 데이터 조회
 
 ```bash

@@ -208,13 +208,27 @@
                             </div>
 
                             <div class="form-group">
+                                <label for="dealType">거래유형</label>
+                                <select id="dealType" onchange="toggleDealTypeFields()">
+                                    <option value="월세">월세</option>
+                                    <option value="전세">전세</option>
+                                    <option value="매매">매매</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group" id="depositMonthlyGroup">
                                 <label for="deposit">보증금 (만원)</label>
                                 <input type="number" id="deposit" placeholder="예: 5000" value="0">
                             </div>
 
-                            <div class="form-group">
+                            <div class="form-group" id="monthlyRentGroup">
                                 <label for="monthlyRent">월세 (만원)</label>
                                 <input type="number" id="monthlyRent" placeholder="예: 50" value="0">
+                            </div>
+
+                            <div class="form-group" id="salePriceGroup" style="display: none;">
+                                <label for="salePrice">매매가 (만원)</label>
+                                <input type="number" id="salePrice" placeholder="예: 35000" value="">
                             </div>
 
                             <div class="form-group">
@@ -363,18 +377,20 @@
                                     <th>건물명</th>
                                     <th>동/타입</th>
                                     <th>호수</th>
+                                    <th>거래유형</th>
                                     <th>보증금</th>
                                     <th>월세</th>
                                     <th>전입유무</th>
                                     <th>상태</th>
                                     <th>연락처</th>
                                     <th>등록일</th>
+                                    <th>수정일</th>
                                     <th>관리</th>
                                 </tr>
                             </thead>
                             <tbody id="propertiesTableBody">
                                 <tr>
-                                    <td colspan="11" class="empty-row">등록된 매물이 없습니다.</td>
+                                    <td colspan="13" class="empty-row">등록된 매물이 없습니다.</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -432,19 +448,21 @@
                                     <th>건물명</th>
                                     <th>동/타입</th>
                                     <th>호수</th>
+                                    <th>거래유형</th>
                                     <th>보증금</th>
                                     <th>월세</th>
                                     <th>전입유무</th>
                                     <th>상태</th>
                                     <th>연락처</th>
                                     <th>등록일</th>
+                                    <th>수정일</th>
                                     <th>과거이력</th>
                                     <th>관리</th>
                                 </tr>
                             </thead>
                             <tbody id="historyTableBody">
                                 <tr>
-                                    <td colspan="12" class="empty-row">삭제된 매물이 없습니다.</td>
+                                    <td colspan="14" class="empty-row">삭제된 매물이 없습니다.</td>
                                 </tr>
                             </tbody>
                         </table>

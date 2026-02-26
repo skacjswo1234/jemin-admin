@@ -247,6 +247,66 @@ function toggleFullOption() {
     });
 }
 
+// 거래유형 변경 시 보증금/월세 vs 매매가 필드 표시/숨김
+function toggleDealTypeFields() {
+    const dealType = document.getElementById('dealType');
+    const depositMonthlyGroup = document.getElementById('depositMonthlyGroup');
+    const monthlyRentGroup = document.getElementById('monthlyRentGroup');
+    const salePriceGroup = document.getElementById('salePriceGroup');
+    if (!dealType || !depositMonthlyGroup) return;
+    const v = dealType.value;
+    if (v === '매매') {
+        depositMonthlyGroup.style.display = 'none';
+        monthlyRentGroup.style.display = 'none';
+        if (salePriceGroup) salePriceGroup.style.display = 'block';
+    } else if (v === '전세') {
+        depositMonthlyGroup.style.display = 'block';
+        if (monthlyRentGroup) monthlyRentGroup.style.display = 'none';
+        if (salePriceGroup) salePriceGroup.style.display = 'none';
+        document.getElementById('deposit').placeholder = '전세금 (만원)';
+    } else {
+        depositMonthlyGroup.style.display = 'block';
+        if (monthlyRentGroup) monthlyRentGroup.style.display = 'block';
+        if (salePriceGroup) salePriceGroup.style.display = 'none';
+        document.getElementById('deposit').placeholder = '예: 5000';
+    }
+}
+
+// 모달 내 거래유형 변경 시 필드 표시/숨김 및 required 처리
+function toggleModalDealTypeFields() {
+    const dealTypeSelect = document.getElementById('modalDealType');
+    const depositGroup = document.getElementById('modalDepositGroup');
+    const monthlyRentGroup = document.getElementById('modalMonthlyRentGroup');
+    const salePriceGroup = document.getElementById('modalSalePriceGroup');
+    const depositInput = document.getElementById('modalDeposit');
+    const monthlyRentInput = document.getElementById('modalMonthlyRent');
+    const salePriceInput = document.getElementById('modalSalePrice');
+    if (!dealTypeSelect || !depositGroup) return;
+    const v = dealTypeSelect.value;
+    if (v === '매매') {
+        depositGroup.style.display = 'none';
+        if (monthlyRentGroup) monthlyRentGroup.style.display = 'none';
+        if (salePriceGroup) salePriceGroup.style.display = 'block';
+        if (depositInput) depositInput.removeAttribute('required');
+        if (monthlyRentInput) monthlyRentInput.removeAttribute('required');
+        if (salePriceInput) salePriceInput.setAttribute('required', 'required');
+    } else if (v === '전세') {
+        depositGroup.style.display = 'block';
+        if (monthlyRentGroup) monthlyRentGroup.style.display = 'none';
+        if (salePriceGroup) salePriceGroup.style.display = 'none';
+        if (depositInput) depositInput.setAttribute('required', 'required');
+        if (monthlyRentInput) monthlyRentInput.removeAttribute('required');
+        if (salePriceInput) salePriceInput.removeAttribute('required');
+    } else {
+        depositGroup.style.display = 'block';
+        if (monthlyRentGroup) monthlyRentGroup.style.display = 'block';
+        if (salePriceGroup) salePriceGroup.style.display = 'none';
+        if (depositInput) depositInput.setAttribute('required', 'required');
+        if (monthlyRentInput) monthlyRentInput.setAttribute('required', 'required');
+        if (salePriceInput) salePriceInput.removeAttribute('required');
+    }
+}
+
 // 단기가능여부 변경 시 단기월세 필드 표시/숨김
 function toggleShortTermRent() {
     const shortTermAvailable = document.querySelector('input[name="shortTermAvailable"]:checked');
@@ -436,12 +496,20 @@ async function addProperty() {
         return;
     }
 
+    const dealTypeEl = document.getElementById('dealType');
+    const dealType = dealTypeEl ? dealTypeEl.value : '월세';
+    const salePriceEl = document.getElementById('salePrice');
+    const salePriceRaw = salePriceEl ? salePriceEl.value : '';
+    const salePrice = dealType === '매매' && salePriceRaw !== '' ? parseInt(salePriceRaw) : null;
+    const deposit = dealType === '매매' ? 0 : (parseInt(document.getElementById('deposit').value) || 0);
+    const monthlyRent = (dealType === '매매' || dealType === '전세') ? 0 : (parseInt(document.getElementById('monthlyRent').value) || 0);
+
     const property = {
         buildingName: buildingName,
         dongType: dongType,
         roomNumber: roomNumber,
-        deposit: parseInt(document.getElementById('deposit').value) || 0,
-        monthlyRent: parseInt(document.getElementById('monthlyRent').value) || 0,
+        deposit: deposit,
+        monthlyRent: monthlyRent,
         password: document.getElementById('password').value || '',
         moveIn: document.getElementById('moveIn').value,
         status: document.getElementById('status').value,
@@ -449,7 +517,9 @@ async function addProperty() {
         notes: document.getElementById('notes').value || '',
         contact: document.getElementById('contact').value || '',
         shortTermAvailable: shortTermAvailable,
-        shortTermRent: shortTermRent
+        shortTermRent: shortTermRent,
+        dealType: dealType,
+        salePrice: salePrice
     };
 
     // 디버깅: 전송할 데이터 확인
@@ -473,6 +543,7 @@ async function addProperty() {
         document.getElementById('dongType').innerHTML = '<option value="">건물을 먼저 선택하세요</option>';
         document.getElementById('shortTermRentGroup').style.display = 'none';
         document.querySelector('input[name="shortTermAvailable"][value="N"]').checked = true;
+        toggleDealTypeFields();
         
         showNotification('매물이 성공적으로 등록되었습니다!', 'success');
         
@@ -532,15 +603,18 @@ function updateDashboard() {
     if (recentProperties.length === 0) {
         recentContainer.innerHTML = '<p class="empty-message">등록된 매물이 없습니다.</p>';
     } else {
-        recentContainer.innerHTML = recentProperties.map(property => `
+        recentContainer.innerHTML = recentProperties.map(property => {
+            const dt = property.dealType || '월세';
+            const priceText = dt === '매매' ? `매매 ${(property.salePrice || 0).toLocaleString()}만` : dt === '전세' ? `전세 ${(property.deposit || 0).toLocaleString()}만` : `보증금 ${(property.deposit || 0).toLocaleString()}만 / 월세 ${(property.monthlyRent || 0).toLocaleString()}만`;
+            return `
             <div class="property-item">
                 <div class="property-item-info">
                     <h4>${property.buildingName || '미등록'} ${property.roomNumber || ''}호</h4>
-                    <p>보증금 ${(property.deposit || 0).toLocaleString()}만 / 월세 ${(property.monthlyRent || 0).toLocaleString()}만</p>
+                    <p>${priceText}</p>
                 </div>
                 <div class="property-item-price">${property.status || '상태미정'}</div>
             </div>
-        `).join('');
+        `; }).join('');
     }
 }
 
@@ -588,16 +662,18 @@ function renderPropertiesList() {
         if (filtered.length === 0) {
             cardsContainer.innerHTML = '<div class="empty-message">매물이 없습니다.</div>';
         } else {
-            cardsContainer.innerHTML = filtered.map(property => `
-                <div class="property-card">
-                    <div class="property-card-header">
-                        <div class="property-card-title">
-                            <h4>${property.buildingName || '미등록'} ${property.dongType || ''} ${property.roomNumber || ''}호</h4>
-                            <p>${property.contact || '-'}${property.shortTermAvailable === 'Y' ? ` (단기 O${property.shortTermRent ? ' - 월세: ' + property.shortTermRent : ''})` : property.shortTermAvailable === 'N' ? ` (단기: X)` : ''}</p>
-                        </div>
-                        <div class="property-card-price">${(property.deposit || 0).toLocaleString()}/${(property.monthlyRent || 0).toLocaleString()}</div>
-                    </div>
-                    <div class="property-card-details">
+            cardsContainer.innerHTML = filtered.map(property => {
+                const dt = property.dealType || '월세';
+                const priceLabel = dt === '매매' ? `매매 ${(property.salePrice || 0).toLocaleString()}만` : dt === '전세' ? `전세 ${(property.deposit || 0).toLocaleString()}만` : (property.deposit || 0).toLocaleString() + '/' + (property.monthlyRent || 0).toLocaleString();
+                const detailsHtml = dt === '매매' ? `
+                        <div class="property-card-detail">
+                            <i class="fas fa-won-sign"></i>
+                            <span>매매가 ${(property.salePrice || 0).toLocaleString()}만</span>
+                        </div>` : dt === '전세' ? `
+                        <div class="property-card-detail">
+                            <i class="fas fa-won-sign"></i>
+                            <span>전세금 ${(property.deposit || 0).toLocaleString()}만</span>
+                        </div>` : `
                         <div class="property-card-detail">
                             <i class="fas fa-won-sign"></i>
                             <span>보증금 ${(property.deposit || 0).toLocaleString()}만</span>
@@ -605,7 +681,18 @@ function renderPropertiesList() {
                         <div class="property-card-detail">
                             <i class="fas fa-credit-card"></i>
                             <span>월세 ${(property.monthlyRent || 0).toLocaleString()}만</span>
+                        </div>`;
+                return `
+                <div class="property-card">
+                    <div class="property-card-header">
+                        <div class="property-card-title">
+                            <h4>${property.buildingName || '미등록'} ${property.dongType || ''} ${property.roomNumber || ''}호</h4>
+                            <p>${property.contact || '-'}${property.shortTermAvailable === 'Y' ? ` (단기 O${property.shortTermRent ? ' - 월세: ' + property.shortTermRent : ''})` : property.shortTermAvailable === 'N' ? ` (단기: X)` : ''}</p>
                         </div>
+                        <div class="property-card-price">${priceLabel}</div>
+                    </div>
+                    <div class="property-card-details">
+                        ${detailsHtml}
                         <div class="property-card-detail">
                             <i class="fas fa-user-check"></i>
                             <span>${property.moveIn || '-'}</span>
@@ -625,6 +712,7 @@ function renderPropertiesList() {
                         <div>
                             <span class="status-badge ${getStatusClass(property.status)}">${property.status || '미정'}</span>
                             <span class="property-card-date"> · ${formatDate(property.createdAt)}</span>
+                            ${property.updatedAt ? `<span class="property-card-date"> · 수정 ${formatDate(property.updatedAt)}</span>` : ''}
                         </div>
                         <div class="property-card-actions">
                             <button class="btn btn-sm btn-primary" onclick="viewProperty(${property.id})">
@@ -636,27 +724,33 @@ function renderPropertiesList() {
                         </div>
                     </div>
                 </div>
-            `).join('');
+            `; }).join('');
         }
     } else {
         // PC: 테이블 뷰만 렌더링
         const tbody = document.getElementById('propertiesTableBody');
 
         if (filtered.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="11" class="empty-row">매물이 없습니다.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="13" class="empty-row">매물이 없습니다.</td></tr>';
         } else {
-            tbody.innerHTML = filtered.map((property, index) => `
+            tbody.innerHTML = filtered.map((property, index) => {
+                const dt = property.dealType || '월세';
+                const depositStr = dt === '매매' ? '-' : (property.deposit || 0).toLocaleString() + '만';
+                const rentStr = dt === '매매' ? ((property.salePrice || 0).toLocaleString() + '만') : dt === '전세' ? '-' : (property.monthlyRent || 0).toLocaleString() + '만';
+                return `
                 <tr>
                     <td>${index + 1}</td>
                     <td>${property.buildingName || '미등록'}</td>
                     <td>${property.dongType || '-'}</td>
                     <td>${property.roomNumber || '-'}호</td>
-                    <td>${(property.deposit || 0).toLocaleString()}만</td>
-                    <td>${(property.monthlyRent || 0).toLocaleString()}만</td>
+                    <td>${dt}</td>
+                    <td>${depositStr}</td>
+                    <td>${rentStr}</td>
                     <td>${property.moveIn || '-'}</td>
                     <td><span class="status-badge ${getStatusClass(property.status)}">${property.status || '미정'}</span></td>
                     <td>${property.contact || '-'}${property.shortTermAvailable === 'Y' ? ` (단기 O${property.shortTermRent ? ' - 월세: ' + property.shortTermRent : ''})` : property.shortTermAvailable === 'N' ? ` (단기: X)` : ''}</td>
                     <td>${formatDate(property.createdAt)}</td>
+                    <td>${property.updatedAt ? formatDate(property.updatedAt) : '-'}</td>
                     <td>
                         <div class="action-buttons">
                             <button class="action-btn edit" onclick="viewProperty(${property.id})" title="상세보기">
@@ -668,7 +762,7 @@ function renderPropertiesList() {
                         </div>
                     </td>
                 </tr>
-            `).join('');
+            `; }).join('');
         }
     }
 }
@@ -928,13 +1022,27 @@ async function viewProperty(id) {
                 </div>
                 
                 <div class="form-group">
-                    <label for="modalDeposit">보증금 (만원)</label>
+                    <label for="modalDealType">거래유형</label>
+                    <select id="modalDealType" onchange="toggleModalDealTypeFields()" ${readonlyAttr} style="${readonlyStyle}">
+                        <option value="월세" ${(property.dealType || '월세') === '월세' ? 'selected' : ''}>월세</option>
+                        <option value="전세" ${(property.dealType || '월세') === '전세' ? 'selected' : ''}>전세</option>
+                        <option value="매매" ${(property.dealType || '월세') === '매매' ? 'selected' : ''}>매매</option>
+                    </select>
+                </div>
+                
+                <div class="form-group" id="modalDepositGroup" style="display: ${(property.dealType || '월세') === '매매' ? 'none' : 'block'};">
+                    <label for="modalDeposit">${(property.dealType || '월세') === '전세' ? '전세금' : '보증금'} (만원)</label>
                     <input type="number" id="modalDeposit" value="${property.deposit || 0}" ${readonlyAttr} required style="${readonlyStyle}">
                 </div>
                 
-                <div class="form-group">
+                <div class="form-group" id="modalMonthlyRentGroup" style="display: ${(property.dealType || '월세') === '매매' || (property.dealType || '월세') === '전세' ? 'none' : 'block'};">
                     <label for="modalMonthlyRent">월세 (만원)</label>
                     <input type="number" id="modalMonthlyRent" value="${property.monthlyRent || 0}" ${readonlyAttr} required style="${readonlyStyle}">
+                </div>
+                
+                <div class="form-group" id="modalSalePriceGroup" style="display: ${(property.dealType || '월세') === '매매' ? 'block' : 'none'};">
+                    <label for="modalSalePrice">매매가 (만원)</label>
+                    <input type="number" id="modalSalePrice" value="${property.salePrice ?? ''}" ${readonlyAttr} style="${readonlyStyle}" placeholder="예: 35000">
                 </div>
                 
                 <div class="form-group">
@@ -997,6 +1105,7 @@ async function viewProperty(id) {
                 
                 <div class="form-group full-width" style="color: var(--text-secondary); font-size: 13px;">
                     등록일: ${formatDate(property.createdAt)}
+                    ${property.updatedAt ? `<br>수정일: ${formatDate(property.updatedAt)}` : ''}
                     ${isDeleted ? '<br>과거이력: 삭제된 매물' : ''}
                 </div>
             </div>
@@ -1029,18 +1138,14 @@ async function viewProperty(id) {
                     updateProperty(property.id);
                 });
             }
-            // 모달 내 단기가능여부 초기 상태 설정
+            // 모달 내 단기가능여부 및 거래유형 필드 표시 상태 설정
             setTimeout(() => {
                 const shortTermRentGroup = document.getElementById('modalShortTermRentGroup');
                 const shortTermAvailableRadio = document.querySelector('input[name="modalShortTermAvailable"]:checked');
-                
                 if (shortTermRentGroup && shortTermAvailableRadio) {
-                    if (shortTermAvailableRadio.value === 'Y') {
-                        shortTermRentGroup.style.display = 'block';
-                    } else {
-                        shortTermRentGroup.style.display = 'none';
-                    }
+                    shortTermRentGroup.style.display = shortTermAvailableRadio.value === 'Y' ? 'block' : 'none';
                 }
+                toggleModalDealTypeFields();
             }, 50);
         }, 100);
     }
@@ -1077,14 +1182,24 @@ async function updateProperty(id) {
     const shortTermRentInput = document.getElementById('modalShortTermRent');
     const shortTermRent = shortTermRentInput ? shortTermRentInput.value.trim() : '';
 
+    const modalDealTypeEl = document.getElementById('modalDealType');
+    const modalDealType = modalDealTypeEl ? modalDealTypeEl.value : '월세';
+    const modalSalePriceEl = document.getElementById('modalSalePrice');
+    const modalSalePriceRaw = modalSalePriceEl ? modalSalePriceEl.value : '';
+    const modalSalePrice = modalDealType === '매매' && modalSalePriceRaw !== '' ? parseInt(modalSalePriceRaw) : null;
+    const modalDeposit = modalDealType === '매매' ? 0 : (parseInt(document.getElementById('modalDeposit').value) || 0);
+    const modalMonthlyRent = (modalDealType === '매매' || modalDealType === '전세') ? 0 : (parseInt(document.getElementById('modalMonthlyRent').value) || 0);
+
     const updatedProperty = {
         buildingName: document.getElementById('modalBuildingName').value,
         dongType: document.getElementById('modalDongType').value,
         roomNumber: document.getElementById('modalRoomNumber').value,
-        deposit: parseInt(document.getElementById('modalDeposit').value),
-        monthlyRent: parseInt(document.getElementById('modalMonthlyRent').value),
+        deposit: modalDeposit,
+        monthlyRent: modalMonthlyRent,
         password: document.getElementById('modalPassword').value,
         moveIn: document.getElementById('modalMoveIn').value,
+        dealType: modalDealType,
+        salePrice: modalSalePrice,
         status: document.getElementById('modalStatus').value,
         options: options,
         notes: document.getElementById('modalNotes').value,
@@ -1274,24 +1389,21 @@ async function renderHistoryList() {
         if (filtered.length === 0) {
             cardsContainer.innerHTML = '<div class="empty-message">삭제된 매물이 없습니다.</div>';
         } else {
-            cardsContainer.innerHTML = filtered.map(property => `
+            cardsContainer.innerHTML = filtered.map(property => {
+                const dt = property.dealType || '월세';
+                const priceLabel = dt === '매매' ? `매매 ${(property.salePrice || 0).toLocaleString()}만` : dt === '전세' ? `전세 ${(property.deposit || 0).toLocaleString()}만` : (property.deposit || 0).toLocaleString() + '/' + (property.monthlyRent || 0).toLocaleString();
+                const detailsHtml = dt === '매매' ? `<div class="property-card-detail"><i class="fas fa-won-sign"></i><span>매매가 ${(property.salePrice || 0).toLocaleString()}만</span></div>` : dt === '전세' ? `<div class="property-card-detail"><i class="fas fa-won-sign"></i><span>전세금 ${(property.deposit || 0).toLocaleString()}만</span></div>` : `<div class="property-card-detail"><i class="fas fa-won-sign"></i><span>보증금 ${(property.deposit || 0).toLocaleString()}만</span></div><div class="property-card-detail"><i class="fas fa-credit-card"></i><span>월세 ${(property.monthlyRent || 0).toLocaleString()}만</span></div>`;
+                return `
                 <div class="property-card" style="opacity: 0.7; border-left-color: var(--danger-color);">
                     <div class="property-card-header">
                         <div class="property-card-title">
                             <h4>${property.buildingName || '미등록'} ${property.dongType || ''} ${property.roomNumber || ''}호</h4>
                             <p>${property.contact || '-'}${property.shortTermAvailable === 'Y' ? ` (단기 O${property.shortTermRent ? ' - 월세: ' + property.shortTermRent : ''})` : property.shortTermAvailable === 'N' ? ` (단기: X)` : ''}</p>
                         </div>
-                        <div class="property-card-price">${(property.deposit || 0).toLocaleString()}/${(property.monthlyRent || 0).toLocaleString()}</div>
+                        <div class="property-card-price">${priceLabel}</div>
                     </div>
                     <div class="property-card-details">
-                        <div class="property-card-detail">
-                            <i class="fas fa-won-sign"></i>
-                            <span>보증금 ${(property.deposit || 0).toLocaleString()}만</span>
-                        </div>
-                        <div class="property-card-detail">
-                            <i class="fas fa-credit-card"></i>
-                            <span>월세 ${(property.monthlyRent || 0).toLocaleString()}만</span>
-                        </div>
+                        ${detailsHtml}
                         <div class="property-card-detail">
                             <i class="fas fa-user-check"></i>
                             <span>${property.moveIn || '-'}</span>
@@ -1311,6 +1423,7 @@ async function renderHistoryList() {
                         <div>
                             <span class="status-badge ${getStatusClass(property.status)}">${property.status || '미정'}</span>
                             <span class="property-card-date"> · ${formatDate(property.createdAt)}</span>
+                            ${property.updatedAt ? `<span class="property-card-date"> · 수정 ${formatDate(property.updatedAt)}</span>` : ''}
                             <span class="property-card-date" style="color: var(--danger-color);"> · 과거이력</span>
                         </div>
                         <div class="property-card-actions">
@@ -1320,7 +1433,7 @@ async function renderHistoryList() {
                         </div>
                     </div>
                 </div>
-            `).join('');
+            `; }).join('');
         }
     } else {
         // PC: 테이블 뷰
@@ -1328,20 +1441,26 @@ async function renderHistoryList() {
         if (!tbody) return;
 
         if (filtered.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="12" class="empty-row">삭제된 매물이 없습니다.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="14" class="empty-row">삭제된 매물이 없습니다.</td></tr>';
         } else {
-            tbody.innerHTML = filtered.map((property, index) => `
+            tbody.innerHTML = filtered.map((property, index) => {
+                const dt = property.dealType || '월세';
+                const depositStr = dt === '매매' ? '-' : (property.deposit || 0).toLocaleString() + '만';
+                const rentStr = dt === '매매' ? ((property.salePrice || 0).toLocaleString() + '만') : dt === '전세' ? '-' : (property.monthlyRent || 0).toLocaleString() + '만';
+                return `
                 <tr style="opacity: 0.7;">
                     <td>${index + 1}</td>
                     <td>${property.buildingName || '미등록'}</td>
                     <td>${property.dongType || '-'}</td>
                     <td>${property.roomNumber || '-'}호</td>
-                    <td>${(property.deposit || 0).toLocaleString()}만</td>
-                    <td>${(property.monthlyRent || 0).toLocaleString()}만</td>
+                    <td>${dt}</td>
+                    <td>${depositStr}</td>
+                    <td>${rentStr}</td>
                     <td>${property.moveIn || '-'}</td>
                     <td><span class="status-badge ${getStatusClass(property.status)}">${property.status || '미정'}</span></td>
                     <td>${property.contact || '-'}${property.shortTermAvailable === 'Y' ? ` (단기 O${property.shortTermRent ? ' - 월세: ' + property.shortTermRent : ''})` : property.shortTermAvailable === 'N' ? ` (단기: X)` : ''}</td>
                     <td>${formatDate(property.createdAt)}</td>
+                    <td>${property.updatedAt ? formatDate(property.updatedAt) : '-'}</td>
                     <td style="color: var(--danger-color);">과거이력</td>
                     <td>
                         <div class="action-buttons">
@@ -1351,7 +1470,7 @@ async function renderHistoryList() {
                         </div>
                     </td>
                 </tr>
-            `).join('');
+            `; }).join('');
         }
     }
 }
@@ -1552,28 +1671,26 @@ async function deleteAccount(username) {
 // 엑셀 샘플 파일 다운로드
 function downloadExcelSample() {
     const sampleData = [
-        ['✅ 필수입력', '✅ 필수입력', '선택입력', '선택입력', '선택입력', '선택입력', '선택입력', '선택입력', '선택입력', '선택입력', '선택입력', '선택입력', '선택입력'],
-        ['건물명', '동/타입', '호수', '보증금(만원)', '월세(만원)', '비밀번호', '전입유무', '상태', '연락처', '단기가능여부', '단기월세', '옵션', '특이사항'],
-        ['⬇️ 정확히 입력', '⬇️ 정확히 입력', '', '', '', '', '전입/미전입', '공실/임대중/계약대기', '', 'O/X', 'O일 경우 입력', '⬇️ 쉼표로 구분', ''],
-        ['타워더모스트', 'A타입', '1503', '5000', '50', '1234*', '전입', '공실', '010-1234-5678', 'X', '', '냉장고, 세탁기, 에어컨', '남향, 신축'],
-        ['', '', '', '', '', '', '', '', '', '', '', '', ''],
-        ['', '', '', '', '', '', '', '', '', '', '', '', ''],
-        ['📌 건물별 동/타입 목록 (반드시 아래 목록에서 선택)', '', '', '', '', '', '', '', '', '', '', '', ''],
-        ['', '', '', '', '', '', '', '', '', '', '', '', ''],
-        ['타워더모스트', '➡️ A타입, B타입, C타입, D타입', '', '', '', '', '', '', '', '', '', '', ''],
-        ['해링턴타워', '➡️ 101동, 102동, 103동', '', '', '', '', '', '', '', '', '', '', ''],
-        ['KCC하버뷰', '➡️ 101동, 102동, 원룸형(도생), 원룸형(오피)', '', '', '', '', '', '', '', '', '', '', ''],
-        ['청일디오브', '➡️ 원룸, 투룸', '', '', '', '', '', '', '', '', '', '', ''],
-        ['테라스타오션', '➡️ 원룸(전면), 원룸(사이드)', '', '', '', '', '', '', '', '', '', '', ''],
-        ['', '', '', '', '', '', '', '', '', '', '', '', ''],
-        ['💡 작성 가이드', '', '', '', '', '', '', '', '', '', '', '', ''],
-        ['- 건물명과 동/타입은 반드시 입력해야 합니다', '', '', '', '', '', '', '', '', '', '', '', ''],
-        ['- 나머지 항목은 선택입력이며 비워둘 수 있습니다', '', '', '', '', '', '', '', '', '', '', '', ''],
-        ['- 전입유무: 전입 또는 미전입 (비우면 기본값 미전입)', '', '', '', '', '', '', '', '', '', '', '', ''],
-        ['- 상태: 공실, 임대중, 계약대기 중 선택 (비우면 기본값 공실)', '', '', '', '', '', '', '', '', '', '', '', ''],
-        ['- 단기가능여부: O 또는 X (비우면 기본값 X)', '', '', '', '', '', '', '', '', '', '', '', ''],
-        ['- 단기월세: 단기가능여부가 O일 경우 입력 (예: 1개월 50만원, 3개월 45만원)', '', '', '', '', '', '', '', '', '', '', '', ''],
-        ['- 옵션: 냉장고, 세탁기, 에어컨, 인덕션, 전자레인지, 책상, 침대, 옷장 중 선택 (여러개는 쉼표로 구분)', '', '', '', '', '', '', '', '', '', '', '', '']
+        ['✅ 필수입력', '✅ 필수입력', '선택입력', '선택입력', '선택입력', '선택입력', '선택입력', '선택입력', '선택입력', '선택입력', '선택입력', '선택입력', '선택입력', '선택입력', '선택입력'],
+        ['건물명', '동/타입', '호수', '거래유형', '보증금(만원)', '월세(만원)', '매매가(만원)', '비밀번호', '전입유무', '상태', '연락처', '단기가능여부', '단기월세', '옵션', '특이사항'],
+        ['⬇️ 정확히 입력', '⬇️ 정확히 입력', '', '월세/전세/매매', '', '', '매매일 때만', '전입/미전입', '공실/임대중/계약대기', '', 'O/X', 'O일 경우 입력', '⬇️ 쉼표로 구분', ''],
+        ['타워더모스트', 'A타입', '1503', '월세', '5000', '50', '', '1234*', '전입', '공실', '010-1234-5678', 'X', '', '냉장고, 세탁기, 에어컨', '남향, 신축'],
+        ['해링턴타워', '101동', '201', '매매', '', '', '35000', '', '미전입', '공실', '010-2345-6789', 'X', '', '', ''],
+        ['', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+        ['📌 건물별 동/타입 목록 (반드시 아래 목록에서 선택)', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+        ['', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+        ['타워더모스트', '➡️ A타입, B타입, C타입, D타입', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+        ['해링턴타워', '➡️ 101동, 102동, 103동', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+        ['KCC하버뷰', '➡️ 101동, 102동, 원룸형(도생), 원룸형(오피)', '', '', '', '', '', '', '', '', '', '', '', ''],
+        ['청일디오브', '➡️ 원룸, 투룸', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+        ['테라스타오션', '➡️ 원룸(전면), 원룸(사이드)', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+        ['', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+        ['💡 작성 가이드', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+        ['- 거래유형: 월세, 전세, 매매 (비우면 월세). 매매일 때는 매매가(만원)에 금액 입력', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+        ['- 건물명과 동/타입은 반드시 입력해야 합니다', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+        ['- 상태: 공실, 임대중, 계약대기 중 선택 (비우면 기본값 공실)', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+        ['- 단기월세: 단기가능여부가 O일 경우 입력 (예: 1개월 50만원, 3개월 45만원)', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+        ['- 옵션: 냉장고, 세탁기, 에어컨, 인덕션, 전자레인지, 책상, 침대, 옷장 중 선택 (여러개는 쉼표로 구분)', '', '', '', '', '', '', '', '', '', '', '', '', '', '']
     ];
 
     // 워크북 생성
@@ -1585,8 +1702,10 @@ function downloadExcelSample() {
         { wch: 15 },  // 건물명
         { wch: 15 },  // 동/타입
         { wch: 8 },   // 호수
+        { wch: 10 },  // 거래유형
         { wch: 15 },  // 보증금
         { wch: 15 },  // 월세
+        { wch: 15 },  // 매매가
         { wch: 12 },  // 비밀번호
         { wch: 10 },  // 전입유무
         { wch: 10 },  // 상태
@@ -1670,76 +1789,85 @@ function handleExcelUpload(event) {
             const validMoveIn = ['전입', '미전입'];
             const validStatus = ['공실', '임대중', '계약대기'];
             
+            const validDealTypes = ['월세', '전세', '매매'];
             const properties = rows.map((row, index) => {
-                const [buildingName, dongType, roomNumber, deposit, monthlyRent, password, moveIn, status, contact, shortTermAvailable, shortTermRent, options, notes] = row;
-                const rowNum = index + 4; // 엑셀 행 번호 (헤더 3행 포함)
-                
-                // 필수 필드 검증 (건물명, 동/타입만 필수)
+                // 새 형식(15열): 건물명, 동/타입, 호수, 거래유형, 보증금, 월세, 매매가, 비밀번호, 전입유무, 상태, 연락처, 단기가능여부, 단기월세, 옵션, 특이사항
+                const hasDealType = row.length >= 15;
+                const buildingName = row[0];
+                const dongType = row[1];
+                const roomNumber = row[2];
+                const dealTypeRaw = hasDealType ? row[3] : null;
+                const deposit = hasDealType ? row[4] : row[3];
+                const monthlyRent = hasDealType ? row[5] : row[4];
+                const salePrice = hasDealType ? row[6] : null;
+                const password = hasDealType ? row[7] : row[5];
+                const moveIn = hasDealType ? row[8] : row[6];
+                const status = hasDealType ? row[9] : row[7];
+                const contact = hasDealType ? row[10] : row[8];
+                const shortTermAvailable = hasDealType ? row[11] : row[9];
+                const shortTermRent = hasDealType ? row[12] : row[10];
+                const options = hasDealType ? row[13] : row[11];
+                const notes = hasDealType ? row[14] : row[12];
+                const rowNum = index + 4;
+
                 if (!buildingName || !dongType) {
                     throw new Error(`${rowNum}번째 행: 건물명과 동/타입은 필수입니다.`);
                 }
-                
                 const trimmedBuilding = String(buildingName).trim();
                 const trimmedDongType = String(dongType).trim();
-                
-                // 건물명 검증
+                const dealType = (dealTypeRaw && String(dealTypeRaw).trim()) ? String(dealTypeRaw).trim() : '월세';
+
                 if (!validBuildings.includes(trimmedBuilding)) {
                     throw new Error(`${rowNum}번째 행: 건물명이 올바르지 않습니다. (${trimmedBuilding})\n허용된 건물: ${validBuildings.join(', ')}`);
                 }
-                
-                // 동/타입 검증
                 if (!buildingDongTypes[trimmedBuilding].includes(trimmedDongType)) {
                     throw new Error(`${rowNum}번째 행: '${trimmedBuilding}'의 동/타입이 올바르지 않습니다. (${trimmedDongType})\n허용된 타입: ${buildingDongTypes[trimmedBuilding].join(', ')}`);
                 }
-                
-                // 선택 필드 처리 (입력값이 있을 경우에만 검증)
+                if (dealType && !validDealTypes.includes(dealType)) {
+                    throw new Error(`${rowNum}번째 행: 거래유형이 올바르지 않습니다. (${dealType})\n허용된 값: 월세, 전세, 매매`);
+                }
+
                 const trimmedMoveIn = moveIn ? String(moveIn).trim() : '미전입';
                 const trimmedStatus = status ? String(status).trim() : '공실';
                 let trimmedShortTermAvailable = shortTermAvailable ? String(shortTermAvailable).trim().toUpperCase() : 'N';
                 const trimmedShortTermRent = shortTermRent ? String(shortTermRent).trim() : '';
-                
-                // 단기가능여부 O/X를 Y/N으로 변환
-                if (trimmedShortTermAvailable === 'O') {
-                    trimmedShortTermAvailable = 'Y';
-                } else if (trimmedShortTermAvailable === 'X') {
-                    trimmedShortTermAvailable = 'N';
-                }
-                
-                // 전입유무 검증 (입력된 경우)
+                if (trimmedShortTermAvailable === 'O') trimmedShortTermAvailable = 'Y';
+                else if (trimmedShortTermAvailable === 'X') trimmedShortTermAvailable = 'N';
+
                 if (moveIn && !validMoveIn.includes(trimmedMoveIn)) {
                     throw new Error(`${rowNum}번째 행: 전입유무가 올바르지 않습니다. (${trimmedMoveIn})\n허용된 값: ${validMoveIn.join(', ')}`);
                 }
-                
-                // 상태 검증 (입력된 경우)
                 if (status && !validStatus.includes(trimmedStatus)) {
                     throw new Error(`${rowNum}번째 행: 상태가 올바르지 않습니다. (${trimmedStatus})\n허용된 값: ${validStatus.join(', ')}`);
                 }
-                
-                // 단기가능여부 검증 (입력된 경우)
                 if (shortTermAvailable && !['Y', 'N', 'O', 'X'].includes(trimmedShortTermAvailable)) {
                     throw new Error(`${rowNum}번째 행: 단기가능여부가 올바르지 않습니다. (${shortTermAvailable})\n허용된 값: O, X`);
                 }
-                
-                // 보증금, 월세 처리 (숫자가 아니면 0)
-                const depositNum = deposit ? parseInt(deposit) : 0;
-                const monthlyRentNum = monthlyRent ? parseInt(monthlyRent) : 0;
-                
-                if (deposit && (isNaN(depositNum) || depositNum < 0)) {
+
+                const depositNum = dealType === '매매' ? 0 : (deposit ? parseInt(deposit) : 0);
+                const monthlyRentNum = (dealType === '매매' || dealType === '전세') ? 0 : (monthlyRent ? parseInt(monthlyRent) : 0);
+                const salePriceNum = (dealType === '매매' && salePrice != null && salePrice !== '') ? parseInt(salePrice) : null;
+
+                if (deposit != null && deposit !== '' && dealType !== '매매' && (isNaN(depositNum) || depositNum < 0)) {
                     throw new Error(`${rowNum}번째 행: 보증금은 0 이상의 숫자여야 합니다. (${deposit})`);
                 }
-                if (monthlyRent && (isNaN(monthlyRentNum) || monthlyRentNum < 0)) {
+                if (monthlyRent != null && monthlyRent !== '' && dealType === '월세' && (isNaN(monthlyRentNum) || monthlyRentNum < 0)) {
                     throw new Error(`${rowNum}번째 행: 월세는 0 이상의 숫자여야 합니다. (${monthlyRent})`);
                 }
-                
-                // 옵션 처리
-                const optionsArray = options ? options.split(',').map(opt => opt.trim()).filter(opt => opt) : [];
-                
+                if (dealType === '매매' && (salePriceNum == null || isNaN(salePriceNum) || salePriceNum < 0)) {
+                    throw new Error(`${rowNum}번째 행: 매매일 때 매매가(만원)를 입력해 주세요.`);
+                }
+
+                const optionsArray = options ? String(options).split(',').map(opt => opt.trim()).filter(opt => opt) : [];
+
                 return {
                     buildingName: trimmedBuilding,
                     dongType: trimmedDongType,
                     roomNumber: roomNumber ? String(roomNumber).trim() : '',
+                    dealType: dealType,
                     deposit: depositNum,
                     monthlyRent: monthlyRentNum,
+                    salePrice: salePriceNum,
                     password: password ? String(password).trim() : '',
                     moveIn: trimmedMoveIn,
                     status: trimmedStatus,
@@ -1899,20 +2027,22 @@ function exportToExcel() {
     
     // 헤더 행
     excelData.push([
-        '번호', '건물명', '동/타입', '호수', 
-        '보증금(만원)', '월세(만원)', '비밀번호', 
-        '전입유무', '상태', '연락처', '단기가능여부', '단기월세', '옵션', '특이사항', '등록일'
+        '번호', '건물명', '동/타입', '호수', '거래유형', '보증금(만원)', '월세(만원)', '매매가(만원)', '비밀번호', 
+        '전입유무', '상태', '연락처', '단기가능여부', '단기월세', '옵션', '특이사항', '등록일', '수정일'
     ]);
 
     // 데이터 행
     filtered.forEach((property, index) => {
+        const dt = property.dealType || '월세';
         excelData.push([
             index + 1,
             property.buildingName || '',
             property.dongType || '',
             property.roomNumber || '',
-            property.deposit || 0,
-            property.monthlyRent || 0,
+            dt,
+            property.deposit ?? '',
+            property.monthlyRent ?? '',
+            (dt === '매매' && property.salePrice != null) ? property.salePrice : '',
             property.password || '',
             property.moveIn || '',
             property.status || '',
@@ -1921,7 +2051,8 @@ function exportToExcel() {
             property.shortTermRent || '',
             property.options ? property.options.join(', ') : '',
             property.notes || '',
-            formatDate(property.createdAt)
+            formatDate(property.createdAt),
+            property.updatedAt ? formatDate(property.updatedAt) : ''
         ]);
     });
 
@@ -1935,8 +2066,10 @@ function exportToExcel() {
         { wch: 15 },  // 건물명
         { wch: 12 },  // 동/타입
         { wch: 8 },   // 호수
+        { wch: 8 },   // 거래유형
         { wch: 12 },  // 보증금
         { wch: 12 },  // 월세
+        { wch: 12 },  // 매매가
         { wch: 12 },  // 비밀번호
         { wch: 10 },  // 전입유무
         { wch: 10 },  // 상태
@@ -1945,7 +2078,8 @@ function exportToExcel() {
         { wch: 30 },  // 단기월세
         { wch: 20 },  // 옵션
         { wch: 30 },  // 특이사항
-        { wch: 12 }   // 등록일
+        { wch: 12 },  // 등록일
+        { wch: 12 }   // 수정일
     ];
 
     // 워크시트를 워크북에 추가

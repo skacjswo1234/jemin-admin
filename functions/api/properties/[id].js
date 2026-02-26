@@ -60,7 +60,9 @@ export async function onRequestPut(context) {
       notes, 
       contact,
       shortTermAvailable,
-      shortTermRent
+      shortTermRent,
+      dealType,
+      salePrice
     } = data;
     
     const optionsJson = JSON.stringify(options || []);
@@ -69,7 +71,9 @@ export async function onRequestPut(context) {
       `UPDATE properties 
        SET buildingName = ?, dongType = ?, roomNumber = ?, deposit = ?, 
            monthlyRent = ?, password = ?, moveIn = ?, status = ?, 
-           options = ?, notes = ?, contact = ?, shortTermAvailable = ?, shortTermRent = ?
+           options = ?, notes = ?, contact = ?, shortTermAvailable = ?, shortTermRent = ?,
+           dealType = ?, salePrice = ?,
+           updatedAt = datetime('now')
        WHERE id = ?`
     ).bind(
       buildingName, 
@@ -85,6 +89,8 @@ export async function onRequestPut(context) {
       contact,
       shortTermAvailable || 'N',
       shortTermRent || null,
+      dealType || '월세',
+      salePrice ?? null,
       id
     ).run();
     
