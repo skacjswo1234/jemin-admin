@@ -474,30 +474,26 @@ async function addProperty() {
     const buildingName = document.getElementById('buildingName').value;
     const dongType = document.getElementById('dongType').value;
     const roomNumber = document.getElementById('roomNumber').value || '';
+    const dealTypeEl = document.getElementById('dealType');
+    const dealType = dealTypeEl ? dealTypeEl.value : '월세';
 
-    // 중복 체크: 건물명, 동/타입, 호수가 모두 일치하는 매물이 있는지 확인
+    // 중복 체크: 건물명 + 동/타입 + 호수 + 거래유형이 모두 일치할 때만 중복 (같은 호수라도 월세/전세/매매가 다르면 허용)
     const duplicateProperty = properties.find(p => {
         const pBuildingName = (p.buildingName || '').trim();
         const pDongType = (p.dongType || '').trim();
         const pRoomNumber = (p.roomNumber || '').trim();
-        
-        const inputBuildingName = buildingName.trim();
-        const inputDongType = dongType.trim();
-        const inputRoomNumber = roomNumber.trim();
-        
-        return pBuildingName === inputBuildingName && 
-               pDongType === inputDongType && 
-               pRoomNumber === inputRoomNumber;
+        const pDealType = (p.dealType || '월세').trim();
+        return pBuildingName === buildingName.trim() &&
+               pDongType === dongType.trim() &&
+               pRoomNumber === roomNumber.trim() &&
+               pDealType === dealType;
     });
 
     // 중복이 있으면 경고 모달 표시하고 등록 중단
     if (duplicateProperty) {
-        showDuplicateModal(buildingName, dongType, roomNumber);
+        showDuplicateModal(buildingName, dongType, roomNumber, dealType);
         return;
     }
-
-    const dealTypeEl = document.getElementById('dealType');
-    const dealType = dealTypeEl ? dealTypeEl.value : '월세';
     const salePriceEl = document.getElementById('salePrice');
     const salePriceRaw = salePriceEl ? salePriceEl.value : '';
     const salePrice = dealType === '매매' && salePriceRaw !== '' ? parseInt(salePriceRaw) : null;
@@ -567,10 +563,12 @@ async function addProperty() {
 }
 
 // 중복 경고 모달 표시
-function showDuplicateModal(buildingName, dongType, roomNumber) {
+function showDuplicateModal(buildingName, dongType, roomNumber, dealType) {
     document.getElementById('duplicateBuildingName').textContent = buildingName || '미입력';
     document.getElementById('duplicateDongType').textContent = dongType || '미입력';
     document.getElementById('duplicateRoomNumber').textContent = roomNumber || '미입력';
+    const dealTypeEl = document.getElementById('duplicateDealType');
+    if (dealTypeEl) dealTypeEl.textContent = dealType || '월세';
     
     const modal = document.getElementById('duplicateModal');
     modal.classList.add('active');
