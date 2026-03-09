@@ -579,33 +579,6 @@
                     </div>
                 </div>
             </div>
-
-            <!-- jemin 전용: 다른 계정 비밀번호 변경 모달 -->
-            <div class="modal-overlay" id="changePasswordModal" style="display:none;">
-                <div class="modal">
-                    <div class="modal-header">
-                        <h3>비밀번호 변경</h3>
-                        <button type="button" class="modal-close" onclick="closeChangePasswordModal()">&times;</button>
-                    </div>
-                    <div class="modal-body">
-                        <p class="modal-target-account" id="changePasswordTargetAccount"></p>
-                        <div class="form-group">
-                            <label for="adminNewPassword">새 비밀번호</label>
-                            <input type="password" id="adminNewPassword" minlength="4" placeholder="4자 이상">
-                        </div>
-                        <div class="form-group">
-                            <label for="adminConfirmPassword">새 비밀번호 확인</label>
-                            <input type="password" id="adminConfirmPassword" minlength="4" placeholder="4자 이상">
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" onclick="closeChangePasswordModal()">취소</button>
-                        <button type="button" class="btn btn-primary" id="submitAdminPasswordBtn" onclick="submitAdminPasswordChange()">
-                            <i class="fas fa-save"></i> 변경
-                        </button>
-                    </div>
-                </div>
-            </div>
         </section>
 
         <!-- 보안설정 탭 (jemin 전용) -->
@@ -712,6 +685,33 @@
             </div>
         </section>
     </main>
+
+    <!-- jemin 전용: 다른 계정 비밀번호 변경 모달 -->
+    <div class="modal-overlay" id="changePasswordModal" style="display:none;">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>비밀번호 변경</h3>
+                <button type="button" class="modal-close" onclick="closeChangePasswordModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-target-account" id="changePasswordTargetAccount"></p>
+                <div class="form-group">
+                    <label for="adminNewPassword">새 비밀번호</label>
+                    <input type="password" id="adminNewPassword" minlength="4" placeholder="4자 이상">
+                </div>
+                <div class="form-group">
+                    <label for="adminConfirmPassword">새 비밀번호 확인</label>
+                    <input type="password" id="adminConfirmPassword" minlength="4" placeholder="4자 이상">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeChangePasswordModal()">취소</button>
+                <button type="button" class="btn btn-primary" id="submitAdminPasswordBtn" onclick="submitAdminPasswordChange()">
+                    <i class="fas fa-save"></i> 변경
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- 모달 (상세보기/수정) -->
     <div class="modal" id="propertyModal">

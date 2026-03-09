@@ -668,6 +668,8 @@ body {
 }
 
 .modal-overlay .modal {
+    display: block;
+    position: relative;
     background-color: var(--bg-card);
     border-radius: 8px;
     width: 90%;
