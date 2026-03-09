@@ -1268,14 +1268,11 @@ function closeModal() {
 // 모달 외부 클릭시 닫기
 window.addEventListener('click', function(e) {
     const modal = document.getElementById('propertyModal');
-    if (e.target === modal) {
-        closeModal();
-    }
-    
+    if (e.target === modal) closeModal();
     const duplicateModal = document.getElementById('duplicateModal');
-    if (e.target === duplicateModal) {
-        closeDuplicateModal();
-    }
+    if (e.target === duplicateModal) closeDuplicateModal();
+    const pwdModal = document.getElementById('changePasswordModal');
+    if (e.target === pwdModal) closeChangePasswordModal();
 });
 
 // 매물 논리 삭제 (del_yn = 'Y'로 업데이트)
@@ -1704,15 +1701,15 @@ let _changePasswordTargetUsername = null;
 function openChangePasswordModal(username) {
     _changePasswordTargetUsername = username;
     const el = document.getElementById('changePasswordTargetAccount');
-    if (el) el.innerHTML = '<span class="pwd-target-label">대상 계정</span><strong class="pwd-target-name">' + username + '</strong>';
+    if (el) el.textContent = '대상 계정: ' + username;
     document.getElementById('adminNewPassword').value = '';
     document.getElementById('adminConfirmPassword').value = '';
-    document.getElementById('changePasswordModal').style.display = 'flex';
+    document.getElementById('changePasswordModal').classList.add('active');
 }
 
 function closeChangePasswordModal() {
     _changePasswordTargetUsername = null;
-    document.getElementById('changePasswordModal').style.display = 'none';
+    document.getElementById('changePasswordModal').classList.remove('active');
 }
 
 async function submitAdminPasswordChange() {
