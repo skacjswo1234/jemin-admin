@@ -118,6 +118,15 @@ document.addEventListener('DOMContentLoaded', function() {
             excelDownloadBtn.style.display = 'none';
         }
     }
+
+    // 보안설정 메뉴·탭 표시 (jemin만)
+    const navSecurity = document.getElementById('navSecurity');
+    const securityTab = document.getElementById('security');
+    if (navSecurity) navSecurity.style.display = adminUser === 'jemin' ? '' : 'none';
+    if (securityTab) securityTab.style.display = adminUser === 'jemin' ? '' : 'none';
+
+    // 보안설정 적용 (localStorage 값 반영)
+    applySecuritySettings();
     
     loadFromAPI();
     initializeEventListeners();
@@ -235,6 +244,12 @@ function initializeEventListeners() {
     if (historyFilterMoveIn) historyFilterMoveIn.addEventListener('change', renderHistoryList);
     if (historyFilterStatus) historyFilterStatus.addEventListener('change', renderHistoryList);
     if (historyFilterDongType) historyFilterDongType.addEventListener('change', renderHistoryList);
+
+    // 보안설정 저장 버튼 (jemin 전용)
+    const saveSecurityBtn = document.getElementById('saveSecurityBtn');
+    if (saveSecurityBtn) {
+        saveSecurityBtn.addEventListener('click', saveSecuritySettings);
+    }
 }
 
 // 풀옵션 토글 함수
@@ -444,18 +459,29 @@ function switchTab(tabName) {
     if (tabName === 'history') {
         const adminUser = localStorage.getItem('adminUser');
         if (adminUser !== 'jemin') {
-            // jemin이 아니면 대시보드로 리다이렉트
             switchTab('dashboard');
             document.querySelectorAll('.nav-item').forEach(item => {
                 item.classList.remove('active');
-                if (item.querySelector('[data-tab="dashboard"]')) {
-                    item.classList.add('active');
-                }
+                if (item.querySelector('[data-tab="dashboard"]')) item.classList.add('active');
             });
             return;
         }
         renderHistoryList();
         updateHistoryBuildingFilter();
+    }
+
+    // 보안설정 탭 (jemin만 접근 가능)
+    if (tabName === 'security') {
+        const adminUser = localStorage.getItem('adminUser');
+        if (adminUser !== 'jemin') {
+            switchTab('dashboard');
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+                if (item.querySelector('[data-tab="dashboard"]')) item.classList.add('active');
+            });
+            return;
+        }
+        loadSecuritySettingsToForm();
     }
 }
 
@@ -1549,7 +1575,8 @@ async function changePassword() {
                 username: adminUser,
                 currentPassword,
                 newPassword: newPassword || null,
-                name: name || null
+                name: name || null,
+                requestedBy: adminUser
             })
         });
 
@@ -1629,11 +1656,16 @@ async function loadAccounts() {
                 <td>${account.name || '-'}</td>
                 <td>${formatDate(account.createdAt)}</td>
                 <td>
+                    ${currentUser === 'jemin' ? `
+                    <button class="action-btn" onclick="openChangePasswordModal('${account.username}')" title="비밀번호 변경" style="margin-right:6px;">
+                        <i class="fas fa-key"></i> 비밀번호 변경
+                    </button>
+                    ` : ''}
                     ${account.username !== currentUser ? `
                     <button class="action-btn delete" onclick="deleteAccount('${account.username}')" title="삭제">
                         <i class="fas fa-trash"></i> 삭제
                     </button>
-                    ` : '<span style="color: var(--text-secondary);">-</span>'}
+                    ` : (currentUser !== 'jemin' ? '<span style="color: var(--text-secondary);">-</span>' : '')}
                 </td>
             </tr>
         `).join('');
@@ -1665,6 +1697,93 @@ async function deleteAccount(username) {
         showNotification(error.message, 'error');
     }
 }
+
+// jemin 전용: 다른 계정 비밀번호 변경 모달
+let _changePasswordTargetUsername = null;
+
+function openChangePasswordModal(username) {
+    _changePasswordTargetUsername = username;
+    document.getElementById('changePasswordTargetAccount').textContent = '대상 계정: ' + username;
+    document.getElementById('adminNewPassword').value = '';
+    document.getElementById('adminConfirmPassword').value = '';
+    document.getElementById('changePasswordModal').style.display = 'flex';
+}
+
+function closeChangePasswordModal() {
+    _changePasswordTargetUsername = null;
+    document.getElementById('changePasswordModal').style.display = 'none';
+}
+
+async function submitAdminPasswordChange() {
+    const newPassword = document.getElementById('adminNewPassword').value;
+    const confirmPassword = document.getElementById('adminConfirmPassword').value;
+    if (!_changePasswordTargetUsername) return;
+    if (!newPassword || newPassword.length < 4) {
+        showNotification('새 비밀번호는 4자 이상이어야 합니다.', 'error');
+        return;
+    }
+    if (newPassword !== confirmPassword) {
+        showNotification('새 비밀번호가 일치하지 않습니다.', 'error');
+        return;
+    }
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/auth/change-password`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                requestedBy: 'jemin',
+                targetUsername: _changePasswordTargetUsername,
+                newPassword: newPassword
+            })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || '비밀번호 변경에 실패했습니다.');
+        showNotification(data.message || '비밀번호가 변경되었습니다.', 'success');
+        closeChangePasswordModal();
+        loadAccounts();
+    } catch (error) {
+        showNotification(error.message, 'error');
+    }
+}
+
+// 보안설정 (jemin 전용) — localStorage 키
+const SECURITY_RIGHT_CLICK = 'security_rightClick';
+const SECURITY_DRAG = 'security_drag';
+
+function getSecurityOption(key) {
+    return localStorage.getItem(key) || 'N';
+}
+
+function applySecuritySettings() {
+    const rightClick = getSecurityOption(SECURITY_RIGHT_CLICK);
+    const drag = getSecurityOption(SECURITY_DRAG);
+    document.body.dataset.securityRightClick = rightClick;
+    document.body.dataset.securityDrag = drag;
+}
+
+function loadSecuritySettingsToForm() {
+    const rightClickEl = document.getElementById('securityRightClick');
+    const dragEl = document.getElementById('securityDrag');
+    if (rightClickEl) rightClickEl.value = getSecurityOption(SECURITY_RIGHT_CLICK);
+    if (dragEl) dragEl.value = getSecurityOption(SECURITY_DRAG);
+}
+
+function saveSecuritySettings() {
+    const rightClick = document.getElementById('securityRightClick').value;
+    const drag = document.getElementById('securityDrag').value;
+    localStorage.setItem(SECURITY_RIGHT_CLICK, rightClick);
+    localStorage.setItem(SECURITY_DRAG, drag);
+    applySecuritySettings();
+    showNotification('보안설정이 저장되었습니다.', 'success');
+}
+
+// 전역: 우클릭·드래그 방지 (보안설정 적용)
+document.addEventListener('contextmenu', function(e) {
+    if (getSecurityOption(SECURITY_RIGHT_CLICK) === 'Y') e.preventDefault();
+});
+document.addEventListener('dragstart', function(e) {
+    if (getSecurityOption(SECURITY_DRAG) === 'Y') e.preventDefault();
+}, false);
 
 // 엑셀 샘플 파일 다운로드
 function downloadExcelSample() {

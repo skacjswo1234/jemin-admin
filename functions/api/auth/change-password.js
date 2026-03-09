@@ -1,8 +1,45 @@
-// POST: 비밀번호 및 성명 변경
+// POST: 비밀번호 및 성명 변경 (jemin 슈퍼계정은 다른 계정 비밀번호 직접 변경 가능)
 export async function onRequestPost(context) {
   try {
     const { env, request } = context;
-    const { username, currentPassword, newPassword, name } = await request.json();
+    const { username, currentPassword, newPassword, name, requestedBy, targetUsername } = await request.json();
+    
+    // jemin 슈퍼계정이 다른 계정 비밀번호 변경하는 경우
+    if (requestedBy === 'jemin' && targetUsername) {
+      if (!newPassword || newPassword.length < 4) {
+        return new Response(JSON.stringify({ error: '새 비밀번호는 4자 이상이어야 합니다.' }), {
+          status: 400,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          }
+        });
+      }
+      const { results: targetExists } = await env.DB.prepare(
+        'SELECT id FROM admins WHERE username = ?'
+      ).bind(targetUsername).all();
+      if (targetExists.length === 0) {
+        return new Response(JSON.stringify({ error: '대상 계정을 찾을 수 없습니다.' }), {
+          status: 404,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          }
+        });
+      }
+      await env.DB.prepare(
+        'UPDATE admins SET password = ? WHERE username = ?'
+      ).bind(newPassword, targetUsername).run();
+      return new Response(JSON.stringify({
+        success: true,
+        message: `계정 "${targetUsername}"의 비밀번호가 변경되었습니다.`
+      }), {
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        }
+      });
+    }
     
     if (!username || !currentPassword) {
       return new Response(JSON.stringify({ error: '아이디와 현재 비밀번호를 입력하세요.' }), {
