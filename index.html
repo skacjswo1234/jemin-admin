@@ -614,31 +614,49 @@
                 <h2>보안설정</h2>
                 <p>페이지 보안 옵션 (우클릭·드래그 방지)</p>
             </div>
-            <div class="card">
+            <div class="card security-settings-card">
                 <div class="card-header">
                     <h3>보안 옵션</h3>
                 </div>
                 <div class="card-body">
-                    <div class="form-grid" style="grid-template-columns: 1fr; max-width: 500px;">
-                        <div class="form-group" style="display:flex; align-items:center; gap:12px;">
-                            <label for="securityRightClick" style="margin:0; flex:1;">우클릭 방지</label>
-                            <select id="securityRightClick">
-                                <option value="N">N (허용)</option>
-                                <option value="Y">Y (방지)</option>
-                            </select>
+                    <div class="security-options">
+                        <div class="security-option-row">
+                            <span class="security-option-label">
+                                <i class="fas fa-mouse-pointer"></i>
+                                우클릭 방지
+                            </span>
+                            <div class="radio-group" role="radiogroup" aria-label="우클릭 방지">
+                                <label class="radio-option">
+                                    <input type="radio" name="securityRightClick" value="N">
+                                    <span class="radio-label">허용</span>
+                                </label>
+                                <label class="radio-option">
+                                    <input type="radio" name="securityRightClick" value="Y">
+                                    <span class="radio-label">방지</span>
+                                </label>
+                            </div>
                         </div>
-                        <div class="form-group" style="display:flex; align-items:center; gap:12px;">
-                            <label for="securityDrag" style="margin:0; flex:1;">드래그 방지</label>
-                            <select id="securityDrag">
-                                <option value="N">N (허용)</option>
-                                <option value="Y">Y (방지)</option>
-                            </select>
+                        <div class="security-option-row">
+                            <span class="security-option-label">
+                                <i class="fas fa-hand-paper"></i>
+                                드래그 방지
+                            </span>
+                            <div class="radio-group" role="radiogroup" aria-label="드래그 방지">
+                                <label class="radio-option">
+                                    <input type="radio" name="securityDrag" value="N">
+                                    <span class="radio-label">허용</span>
+                                </label>
+                                <label class="radio-option">
+                                    <input type="radio" name="securityDrag" value="Y">
+                                    <span class="radio-label">방지</span>
+                                </label>
+                            </div>
                         </div>
-                        <div class="form-actions">
-                            <button type="button" class="btn btn-primary" id="saveSecurityBtn">
-                                <i class="fas fa-save"></i> 저장
-                            </button>
-                        </div>
+                    </div>
+                    <div class="security-actions">
+                        <button type="button" class="btn btn-primary" id="saveSecurityBtn">
+                            <i class="fas fa-save"></i> 설정 저장
+                        </button>
                     </div>
                 </div>
             </div>

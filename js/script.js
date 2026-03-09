@@ -1762,15 +1762,19 @@ function applySecuritySettings() {
 }
 
 function loadSecuritySettingsToForm() {
-    const rightClickEl = document.getElementById('securityRightClick');
-    const dragEl = document.getElementById('securityDrag');
-    if (rightClickEl) rightClickEl.value = getSecurityOption(SECURITY_RIGHT_CLICK);
-    if (dragEl) dragEl.value = getSecurityOption(SECURITY_DRAG);
+    const rightClick = getSecurityOption(SECURITY_RIGHT_CLICK);
+    const drag = getSecurityOption(SECURITY_DRAG);
+    const rcChecked = document.querySelector(`input[name="securityRightClick"][value="${rightClick}"]`);
+    const dragChecked = document.querySelector(`input[name="securityDrag"][value="${drag}"]`);
+    if (rcChecked) rcChecked.checked = true;
+    if (dragChecked) dragChecked.checked = true;
 }
 
 function saveSecuritySettings() {
-    const rightClick = document.getElementById('securityRightClick').value;
-    const drag = document.getElementById('securityDrag').value;
+    const rightClickEl = document.querySelector('input[name="securityRightClick"]:checked');
+    const dragEl = document.querySelector('input[name="securityDrag"]:checked');
+    const rightClick = rightClickEl ? rightClickEl.value : 'N';
+    const drag = dragEl ? dragEl.value : 'N';
     localStorage.setItem(SECURITY_RIGHT_CLICK, rightClick);
     localStorage.setItem(SECURITY_DRAG, drag);
     applySecuritySettings();

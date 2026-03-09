@@ -1273,6 +1273,108 @@ body {
     color: var(--primary-color);
 }
 
+/* 보안설정 — 라디오 옵션 */
+.security-settings-card .card-body {
+    padding: 28px 32px;
+}
+
+.security-options {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    max-width: 480px;
+}
+
+.security-option-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    padding: 18px 22px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.security-option-row:hover {
+    border-color: rgba(71, 167, 245, 0.25);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+}
+
+.security-option-label {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text-primary);
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.security-option-label i {
+    color: var(--primary-color);
+    font-size: 14px;
+    opacity: 0.9;
+}
+
+.radio-group {
+    display: inline-flex;
+    gap: 0;
+    background: var(--bg-tertiary);
+    border-radius: 8px;
+    padding: 3px;
+    border: 1px solid var(--border-color);
+}
+
+.radio-option {
+    margin: 0;
+    cursor: pointer;
+    position: relative;
+}
+
+.radio-option input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.radio-option .radio-label {
+    display: block;
+    padding: 10px 22px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    border-radius: 6px;
+    transition: color 0.2s, background 0.2s;
+}
+
+.radio-option:hover .radio-label {
+    color: var(--text-primary);
+}
+
+.radio-option input:checked + .radio-label {
+    background: var(--primary-color);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(71, 167, 245, 0.35);
+}
+
+.radio-option input:focus-visible + .radio-label {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+.security-actions {
+    margin-top: 28px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border-color);
+}
+
+.security-actions .btn {
+    padding: 12px 28px;
+    font-size: 15px;
+}
+
 /* 스크롤바 커스터마이징 */
 ::-webkit-scrollbar {
     width: 10px;
