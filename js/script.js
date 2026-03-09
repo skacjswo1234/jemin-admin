@@ -1703,7 +1703,8 @@ let _changePasswordTargetUsername = null;
 
 function openChangePasswordModal(username) {
     _changePasswordTargetUsername = username;
-    document.getElementById('changePasswordTargetAccount').textContent = '대상 계정: ' + username;
+    const el = document.getElementById('changePasswordTargetAccount');
+    if (el) el.innerHTML = '<span class="pwd-target-label">대상 계정</span><strong class="pwd-target-name">' + username + '</strong>';
     document.getElementById('adminNewPassword').value = '';
     document.getElementById('adminConfirmPassword').value = '';
     document.getElementById('changePasswordModal').style.display = 'flex';

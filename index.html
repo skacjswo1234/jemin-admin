@@ -687,27 +687,34 @@
     </main>
 
     <!-- jemin 전용: 다른 계정 비밀번호 변경 모달 -->
-    <div class="modal-overlay" id="changePasswordModal" style="display:none;">
-        <div class="modal">
-            <div class="modal-header">
-                <h3>비밀번호 변경</h3>
-                <button type="button" class="modal-close" onclick="closeChangePasswordModal()">&times;</button>
-            </div>
-            <div class="modal-body">
-                <p class="modal-target-account" id="changePasswordTargetAccount"></p>
-                <div class="form-group">
-                    <label for="adminNewPassword">새 비밀번호</label>
-                    <input type="password" id="adminNewPassword" minlength="4" placeholder="4자 이상">
+    <div class="modal-overlay pwd-modal-overlay" id="changePasswordModal" style="display:none;">
+        <div class="modal pwd-modal">
+            <div class="pwd-modal-header">
+                <div class="pwd-modal-title-wrap">
+                    <span class="pwd-modal-icon"><i class="fas fa-key"></i></span>
+                    <h3 class="pwd-modal-title">비밀번호 변경</h3>
                 </div>
-                <div class="form-group">
-                    <label for="adminConfirmPassword">새 비밀번호 확인</label>
-                    <input type="password" id="adminConfirmPassword" minlength="4" placeholder="4자 이상">
+                <button type="button" class="pwd-modal-close" onclick="closeChangePasswordModal()" aria-label="닫기">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="pwd-modal-body">
+                <div class="pwd-modal-target" id="changePasswordTargetAccount"></div>
+                <div class="pwd-modal-fields">
+                    <div class="pwd-field">
+                        <label for="adminNewPassword">새 비밀번호</label>
+                        <input type="password" id="adminNewPassword" minlength="4" placeholder="4자 이상 입력" autocomplete="new-password">
+                    </div>
+                    <div class="pwd-field">
+                        <label for="adminConfirmPassword">비밀번호 확인</label>
+                        <input type="password" id="adminConfirmPassword" minlength="4" placeholder="동일하게 다시 입력" autocomplete="new-password">
+                    </div>
                 </div>
             </div>
-            <div class="modal-footer">
+            <div class="pwd-modal-footer">
                 <button type="button" class="btn btn-secondary" onclick="closeChangePasswordModal()">취소</button>
                 <button type="button" class="btn btn-primary" id="submitAdminPasswordBtn" onclick="submitAdminPasswordChange()">
-                    <i class="fas fa-save"></i> 변경
+                    <i class="fas fa-check"></i> 비밀번호 변경
                 </button>
             </div>
         </div>
