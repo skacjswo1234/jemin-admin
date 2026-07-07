@@ -8,3 +8,6 @@ binding = "DB"
 database_name = "jemin-db"
 database_id = "2de50dc3-45d2-444a-bff6-d18d4e47c8e8"
 
+[vars]
+JWT_SECRET = "change-this-secret-before-production-deploy"
+

@@ -1,64 +1,47 @@
-// POST: 로그인
+import {
+  corsOptions,
+  createSession,
+  createToken,
+  getJwtSecret,
+  jsonResponse
+} from '../../_shared/auth.js';
+
 export async function onRequestPost(context) {
   try {
     const { env, request } = context;
     const { username, password } = await request.json();
-    
+
     if (!username || !password) {
-      return new Response(JSON.stringify({ error: '아이디와 비밀번호를 입력하세요.' }), {
-        status: 400,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
-        }
-      });
+      return jsonResponse({ error: '아이디와 비밀번호를 입력하세요.' }, 400);
     }
-    
-    // DB에서 계정 확인
-    const { results } = await env.DB.prepare(
-      'SELECT * FROM admins WHERE username = ? AND password = ?'
-    ).bind(username, password).all();
-    
-    if (results.length === 0) {
-      return new Response(JSON.stringify({ error: '아이디 또는 비밀번호가 올바르지 않습니다.' }), {
-        status: 401,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
-        }
-      });
+
+    const admin = await env.DB.prepare(
+      'SELECT username, name, disabled FROM admins WHERE username = ? AND password = ?'
+    ).bind(username, password).first();
+
+    if (!admin) {
+      return jsonResponse({ error: '아이디 또는 비밀번호가 올바르지 않습니다.' }, 401);
     }
-    
-    return new Response(JSON.stringify({ 
+
+    if (admin.disabled === 1) {
+      return jsonResponse({ error: '비활성화된 계정입니다. 관리자에게 문의하세요.' }, 403);
+    }
+
+    const sessionId = await createSession(env, admin.username);
+    const token = await createToken(admin.username, sessionId, getJwtSecret(env));
+
+    return jsonResponse({
       success: true,
-      username: results[0].username,
-      name: results[0].name
-    }), {
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      }
+      token,
+      username: admin.username,
+      name: admin.name
     });
   } catch (error) {
     console.error('Login error:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      }
-    });
+    return jsonResponse({ error: error.message }, 500);
   }
 }
 
-// OPTIONS: CORS preflight
 export async function onRequestOptions() {
-  return new Response(null, {
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type'
-    }
-  });
+  return corsOptions('POST, OPTIONS');
 }
-

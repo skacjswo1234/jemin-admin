@@ -1,148 +1,121 @@
-// POST: 비밀번호 및 성명 변경 (jemin 슈퍼계정은 다른 계정 비밀번호 직접 변경 가능)
+import {
+  corsOptions,
+  createSession,
+  createToken,
+  getJwtSecret,
+  isSuperAdmin,
+  jsonResponse,
+  requireAuth,
+  revokeUserSessions
+} from '../../_shared/auth.js';
+
 export async function onRequestPost(context) {
   try {
     const { env, request } = context;
-    const { username, currentPassword, newPassword, name, requestedBy, targetUsername } = await request.json();
-    
-    // jemin 슈퍼계정이 다른 계정 비밀번호 변경하는 경우
-    if (requestedBy === 'jemin' && targetUsername) {
+    const body = await request.json();
+    const { username, currentPassword, newPassword, name, targetUsername } = body;
+
+    const auth = await requireAuth(context);
+    if (auth.error) return auth.error;
+
+    if (targetUsername) {
+      if (!isSuperAdmin(auth.user.username)) {
+        return jsonResponse({ error: '권한이 없습니다.' }, 403);
+      }
+
       if (!newPassword || newPassword.length < 4) {
-        return new Response(JSON.stringify({ error: '새 비밀번호는 4자 이상이어야 합니다.' }), {
-          status: 400,
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
-          }
-        });
+        return jsonResponse({ error: '새 비밀번호는 4자 이상이어야 합니다.' }, 400);
       }
-      const { results: targetExists } = await env.DB.prepare(
+
+      const targetExists = await env.DB.prepare(
         'SELECT id FROM admins WHERE username = ?'
-      ).bind(targetUsername).all();
-      if (targetExists.length === 0) {
-        return new Response(JSON.stringify({ error: '대상 계정을 찾을 수 없습니다.' }), {
-          status: 404,
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
-          }
-        });
+      ).bind(targetUsername).first();
+
+      if (!targetExists) {
+        return jsonResponse({ error: '대상 계정을 찾을 수 없습니다.' }, 404);
       }
+
       await env.DB.prepare(
         'UPDATE admins SET password = ? WHERE username = ?'
       ).bind(newPassword, targetUsername).run();
-      return new Response(JSON.stringify({
+
+      await revokeUserSessions(env, targetUsername);
+
+      return jsonResponse({
         success: true,
-        message: `계정 "${targetUsername}"의 비밀번호가 변경되었습니다.`
-      }), {
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
-        }
+        message: `계정 "${targetUsername}"의 비밀번호가 변경되었습니다. 해당 계정은 다시 로그인해야 합니다.`
       });
     }
-    
-    if (!username || !currentPassword) {
-      return new Response(JSON.stringify({ error: '아이디와 현재 비밀번호를 입력하세요.' }), {
-        status: 400,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
-        }
-      });
+
+    if (!currentPassword) {
+      return jsonResponse({ error: '현재 비밀번호를 입력하세요.' }, 400);
     }
-    
-    // 새 비밀번호가 있는 경우 길이 체크
+
     if (newPassword && newPassword.length < 4) {
-      return new Response(JSON.stringify({ error: '새 비밀번호는 4자 이상이어야 합니다.' }), {
-        status: 400,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
-        }
-      });
+      return jsonResponse({ error: '새 비밀번호는 4자 이상이어야 합니다.' }, 400);
     }
-    
-    // 현재 비밀번호 확인
-    const { results } = await env.DB.prepare(
+
+    const admin = await env.DB.prepare(
       'SELECT * FROM admins WHERE username = ? AND password = ?'
-    ).bind(username, currentPassword).all();
-    
-    if (results.length === 0) {
-      return new Response(JSON.stringify({ error: '현재 비밀번호가 올바르지 않습니다.' }), {
-        status: 401,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
-        }
-      });
+    ).bind(auth.user.username, currentPassword).first();
+
+    if (!admin) {
+      return jsonResponse({ error: '현재 비밀번호가 올바르지 않습니다.' }, 401);
     }
-    
-    // 업데이트할 필드 결정
-    let updateQuery = 'UPDATE admins SET ';
-    let params = [];
-    let updates = [];
-    
+
+    const updates = [];
+    const params = [];
+
     if (name) {
       updates.push('name = ?');
       params.push(name);
     }
-    
+
     if (newPassword) {
       updates.push('password = ?');
       params.push(newPassword);
     }
-    
+
     if (updates.length === 0) {
-      return new Response(JSON.stringify({ error: '변경할 내용이 없습니다.' }), {
-        status: 400,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
-        }
+      return jsonResponse({ error: '변경할 내용이 없습니다.' }, 400);
+    }
+
+    await env.DB.prepare(
+      `UPDATE admins SET ${updates.join(', ')} WHERE username = ?`
+    ).bind(...params, auth.user.username).run();
+
+    if (newPassword) {
+      await revokeUserSessions(env, auth.user.username);
+      const newSessionId = await createSession(env, auth.user.username);
+      const token = await createToken(auth.user.username, newSessionId, getJwtSecret(env));
+
+      const updated = await env.DB.prepare(
+        'SELECT username, name FROM admins WHERE username = ?'
+      ).bind(auth.user.username).first();
+
+      return jsonResponse({
+        success: true,
+        name: updated.name,
+        token,
+        message: '정보가 성공적으로 변경되었습니다.'
       });
     }
-    
-    updateQuery += updates.join(', ') + ' WHERE username = ?';
-    params.push(username);
-    
-    // 정보 업데이트
-    await env.DB.prepare(updateQuery).bind(...params).run();
-    
-    // 변경된 정보 조회
-    const { results: updatedResults } = await env.DB.prepare(
+
+    const updated = await env.DB.prepare(
       'SELECT username, name FROM admins WHERE username = ?'
-    ).bind(username).all();
-    
-    return new Response(JSON.stringify({ 
+    ).bind(auth.user.username).first();
+
+    return jsonResponse({
       success: true,
-      name: updatedResults[0].name,
+      name: updated.name,
       message: '정보가 성공적으로 변경되었습니다.'
-    }), {
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      }
     });
   } catch (error) {
     console.error('Change password error:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      }
-    });
+    return jsonResponse({ error: error.message }, 500);
   }
 }
 
-// OPTIONS: CORS preflight
 export async function onRequestOptions() {
-  return new Response(null, {
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type'
-    }
-  });
+  return corsOptions('POST, OPTIONS');
 }
-

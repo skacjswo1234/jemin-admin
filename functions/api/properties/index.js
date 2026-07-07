@@ -1,6 +1,11 @@
 // GET: 모든 매물 조회 또는 필터링된 매물 조회
+import { corsOptions, jsonResponse, requireAuth } from '../../_shared/auth.js';
+
 export async function onRequestGet(context) {
   try {
+    const auth = await requireAuth(context);
+    if (auth.error) return auth.error;
+
     const { env, request } = context;
     const url = new URL(request.url);
     
@@ -56,28 +61,21 @@ export async function onRequestGet(context) {
       options: property.options ? JSON.parse(property.options) : []
     }));
     
-    return new Response(JSON.stringify(properties), {
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Cache-Control': 'public, max-age=10' // 10초 캐시로 읽기 성능 향상
-      }
+    return jsonResponse(properties, 200, {
+      'Cache-Control': 'public, max-age=10'
     });
   } catch (error) {
     console.error('Properties GET error:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      }
-    });
+    return jsonResponse({ error: error.message }, 500);
   }
 }
 
 // POST: 새 매물 등록
 export async function onRequestPost(context) {
   try {
+    const auth = await requireAuth(context);
+    if (auth.error) return auth.error;
+
     const { env, request } = context;
     const data = await request.json();
     
@@ -101,13 +99,7 @@ export async function onRequestPost(context) {
     
     // 필수 필드 검증 (건물명과 동/타입만 필수)
     if (!buildingName || !dongType) {
-      return new Response(JSON.stringify({ error: '건물명과 동/타입은 필수입니다.' }), {
-        status: 400,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
-        }
-      });
+      return jsonResponse({ error: '건물명과 동/타입은 필수입니다.' }, 400);
     }
     
     const optionsJson = JSON.stringify(options || []);
@@ -156,47 +148,21 @@ export async function onRequestPost(context) {
       createdAt: new Date().toISOString()
     };
     
-    return new Response(JSON.stringify({ 
-      success: true, 
+    return jsonResponse({
+      success: true,
       property: newProperty
-    }), {
-      status: 201,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      }
-    });
+    }, 201);
   } catch (error) {
     console.error('Properties POST error:', error);
-    
-    // 중복 키 에러 처리
+
     if (error.message.includes('UNIQUE') || error.message.includes('constraint')) {
-      return new Response(JSON.stringify({ error: '이미 존재하는 매물입니다.' }), {
-        status: 409,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
-        }
-      });
+      return jsonResponse({ error: '이미 존재하는 매물입니다.' }, 409);
     }
-    
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      }
-    });
+
+    return jsonResponse({ error: error.message }, 500);
   }
 }
 
-// OPTIONS: CORS preflight
 export async function onRequestOptions() {
-  return new Response(null, {
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type'
-    }
-  });
+  return corsOptions('GET, POST, OPTIONS');
 }

@@ -351,13 +351,17 @@
         </div>
     </div>
 
+    <script src="js/auth.js"></script>
     <script>
         const API_BASE_URL = '';
 
-        // 이미 로그인되어 있으면 메인으로 이동
-        if (localStorage.getItem('adminUser')) {
-            window.location.href = 'index.html';
-        }
+        (async function checkExistingSession() {
+            if (await verifySession()) {
+                window.location.href = 'index.html';
+            } else {
+                clearAuth();
+            }
+        })();
 
         const loginForm = document.getElementById('loginForm');
         const loginBtn = document.getElementById('loginBtn');
@@ -388,11 +392,7 @@
                     throw new Error(data.error || '로그인에 실패했습니다.');
                 }
 
-                // 로그인 정보 저장
-                localStorage.setItem('adminUser', username);
-                localStorage.setItem('adminName', data.name);
-                
-                // 메인 페이지로 이동
+                saveAuth(data.token, data.username, data.name);
                 window.location.href = 'index.html';
 
             } catch (error) {
