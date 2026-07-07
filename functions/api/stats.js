@@ -1,4 +1,4 @@
-import { corsOptions, jsonResponse, requireAuth } from '../../_shared/auth.js';
+import { corsOptions, jsonResponse, requireAuth } from '../_shared/auth.js';
 
 export async function onRequestGet(context) {
   try {
