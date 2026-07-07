@@ -6,6 +6,15 @@
     <title>부동산 매물관리 시스템</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        (function () {
+            if (!localStorage.getItem('adminToken')) {
+                localStorage.removeItem('adminUser');
+                localStorage.removeItem('adminName');
+                location.replace('login.html');
+            }
+        })();
+    </script>
 </head>
 <body>
     <!-- 헤더 -->

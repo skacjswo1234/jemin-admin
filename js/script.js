@@ -57,9 +57,14 @@ function saveToStorage() {
 
 // 로그인 체크
 async function checkLogin() {
+    if (!hasAuthToken()) {
+        redirectToLogin();
+        return false;
+    }
+
     const valid = await verifySession();
     if (!valid) {
-        window.location.href = 'login.html';
+        redirectToLogin();
         return false;
     }
     return true;

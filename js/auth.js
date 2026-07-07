@@ -12,6 +12,15 @@ function getAuthHeaders() {
   return { Authorization: `Bearer ${token}` };
 }
 
+function hasAuthToken() {
+  return !!localStorage.getItem(AUTH_TOKEN_KEY);
+}
+
+function redirectToLogin() {
+  clearAuth();
+  window.location.replace('login.html');
+}
+
 function saveAuth(token, username, name) {
   localStorage.setItem(AUTH_TOKEN_KEY, token);
   localStorage.setItem(AUTH_USER_KEY, username);
@@ -25,9 +34,9 @@ function clearAuth() {
 }
 
 async function verifySession() {
-  const token = getToken();
-  if (!token) return false;
+  if (!hasAuthToken()) return false;
 
+  const token = getToken();
   try {
     const response = await fetch('/api/auth/verify', {
       headers: {
