@@ -280,89 +280,72 @@ body {
     font-size: 14px;
 }
 
-/* 모바일명함관리 — 하단 분리 + 신규 강조 */
+/* 모바일명함관리 — 하단 분리, 한 줄 대메뉴 */
 .nav-group--mcard {
-    margin: 18px 12px 10px;
-    border-radius: 14px;
-    overflow: hidden;
-    background: linear-gradient(165deg, rgba(37, 99, 235, 0.22) 0%, rgba(37, 99, 235, 0.08) 100%);
-    border: 1px solid rgba(96, 165, 250, 0.45);
-    box-shadow:
-        0 0 0 1px rgba(37, 99, 235, 0.12),
-        0 8px 20px rgba(37, 99, 235, 0.12);
-}
-
-.nav-mcard-divider {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 14px 2px;
-}
-
-.nav-mcard-divider::before,
-.nav-mcard-divider::after {
-    content: "";
-    flex: 1;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(147, 197, 253, 0.7), transparent);
-}
-
-.nav-mcard-divider span {
-    flex-shrink: 0;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    color: #93c5fd;
-    text-transform: uppercase;
+    margin-top: 14px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(37, 99, 235, 0.35);
 }
 
 .nav-group--mcard > .nav-group-toggle {
-    color: #dbeafe !important;
-    border-left-color: transparent !important;
+    flex-wrap: nowrap;
+    white-space: nowrap;
+    color: #60a5fa !important;
+    border-left-color: #2563eb !important;
     font-weight: 650;
+    gap: 12px;
 }
 
 .nav-group--mcard > .nav-group-toggle:hover {
-    background: rgba(37, 99, 235, 0.28) !important;
-    color: #fff !important;
+    background: rgba(37, 99, 235, 0.16) !important;
+    color: #93c5fd !important;
 }
 
 .nav-group--mcard.active > .nav-group-toggle,
 .nav-group--mcard .nav-submenu .nav-item.active a {
-    background: rgba(37, 99, 235, 0.35) !important;
-    color: #fff !important;
+    background: rgba(37, 99, 235, 0.2) !important;
+    color: #93c5fd !important;
     border-left-color: #60a5fa !important;
 }
 
+.nav-mcard-title {
+    flex: 0 1 auto;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 .nav-group--mcard .nav-submenu {
-    background: rgba(15, 23, 42, 0.35);
+    background: rgba(37, 99, 235, 0.08);
 }
 
 .nav-group--mcard .nav-submenu .nav-item a {
-    color: #bfdbfe;
+    color: var(--text-secondary);
+    white-space: nowrap;
 }
 
 .nav-group--mcard .nav-submenu .nav-item a:hover {
-    background: rgba(37, 99, 235, 0.25);
-    color: #fff;
+    background: rgba(37, 99, 235, 0.14);
+    color: var(--text-primary);
 }
 
 .nav-new-badge {
-    margin-left: auto;
-    padding: 2px 8px;
+    flex-shrink: 0;
+    margin-left: 4px;
+    padding: 2px 7px;
     border-radius: 999px;
     background: #2563eb;
     color: #fff;
     font-size: 10px;
     font-weight: 800;
-    letter-spacing: 0.04em;
-    line-height: 1.4;
-    box-shadow: 0 0 12px rgba(37, 99, 235, 0.55);
+    letter-spacing: 0.03em;
+    line-height: 1.35;
 }
 
 .nav-group--mcard .nav-chevron {
-    margin-left: 8px;
-    color: #93c5fd;
+    flex-shrink: 0;
+    margin-left: auto;
+    color: #60a5fa;
 }
 
 /* ---------- 모바일 명함 관리 (기존 매물 UI와 분리) ---------- */
