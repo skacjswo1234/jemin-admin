@@ -437,6 +437,16 @@ function switchTab(tabName) {
         activeTab.classList.add('active');
     }
 
+    // 모바일 명함 탭
+    if (tabName === 'card-contracts') {
+        document.getElementById('navCardGroup')?.classList.add('open');
+        if (typeof loadCardContracts === 'function') loadCardContracts();
+    }
+    if (tabName === 'card-recommend') {
+        document.getElementById('navCardGroup')?.classList.add('open');
+        if (typeof loadCardRecommendations === 'function') loadCardRecommendations();
+    }
+
     // 통계 탭일 경우 차트 렌더링
     if (tabName === 'stats') {
         renderStats();

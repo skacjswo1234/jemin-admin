@@ -83,6 +83,27 @@
                         <span>보안설정</span>
                     </a>
                 </li>
+                <li class="nav-item nav-group" id="navCardGroup">
+                    <a href="#" class="nav-group-toggle" data-group="card">
+                        <i class="fas fa-id-card"></i>
+                        <span>모바일명함관리</span>
+                        <i class="fas fa-chevron-down nav-chevron"></i>
+                    </a>
+                    <ul class="nav-submenu">
+                        <li class="nav-item">
+                            <a href="#" data-tab="card-contracts">
+                                <i class="fas fa-file-signature"></i>
+                                <span>최근 계약 완료</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" data-tab="card-recommend">
+                                <i class="fas fa-star"></i>
+                                <span>오늘의 추천 매물</span>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
                 <li class="nav-item">
                     <a href="#" onclick="logout(); return false;">
                         <i class="fas fa-sign-out-alt"></i>
@@ -694,6 +715,171 @@
                 </div>
             </div>
         </section>
+
+        <!-- 모바일명함: 최근 계약 완료 -->
+        <section class="content-tab" id="card-contracts">
+            <div class="page-header">
+                <h2>최근 계약 완료</h2>
+                <p>모바일 명함 — 최근 계약 카드 관리 (이미지 업로드)</p>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3 id="cardContractFormTitle">새 계약 등록</h3>
+                </div>
+                <div class="card-body">
+                    <form id="cardContractForm" class="property-form" onsubmit="return false;">
+                        <input type="hidden" id="cardContractId" value="">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>대표 이미지</label>
+                                <input type="file" id="cardContractImage" accept="image/*">
+                                <input type="hidden" id="cardContractImageUrl" value="">
+                                <div class="card-image-preview" id="cardContractPreview"></div>
+                            </div>
+                            <div class="form-group">
+                                <label>지역 *</label>
+                                <input type="text" id="cardContractArea" placeholder="예: 수영구 민락동" required>
+                            </div>
+                            <div class="form-group">
+                                <label>아파트명 *</label>
+                                <input type="text" id="cardContractName" placeholder="예: 타워더모스트" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>거래유형</label>
+                                <input type="text" id="cardContractDealType" placeholder="매매 / 전세 / 월세">
+                            </div>
+                            <div class="form-group">
+                                <label>면적</label>
+                                <input type="text" id="cardContractSize" placeholder="예: 84㎡">
+                            </div>
+                            <div class="form-group">
+                                <label>계약월</label>
+                                <input type="text" id="cardContractMonth" placeholder="예: 2026.06">
+                            </div>
+                            <div class="form-group">
+                                <label>정렬</label>
+                                <input type="number" id="cardContractSort" value="0">
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-secondary" onclick="resetCardContractForm()">초기화</button>
+                            <button type="button" class="btn btn-primary" onclick="saveCardContract()">
+                                <i class="fas fa-save"></i> 저장
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top: 20px;">
+                <div class="card-header">
+                    <h3>등록된 계약 목록</h3>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>이미지</th>
+                                    <th>지역</th>
+                                    <th>아파트</th>
+                                    <th>유형</th>
+                                    <th>면적</th>
+                                    <th>계약월</th>
+                                    <th>관리</th>
+                                </tr>
+                            </thead>
+                            <tbody id="cardContractTableBody">
+                                <tr><td colspan="7" class="empty-message">불러오는 중...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 모바일명함: 오늘의 추천 매물 -->
+        <section class="content-tab" id="card-recommend">
+            <div class="page-header">
+                <h2>오늘의 추천 매물</h2>
+                <p>모바일 명함 — 추천 매물 카드 관리 (이미지 업로드)</p>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3 id="cardRecommendFormTitle">새 추천 매물 등록</h3>
+                </div>
+                <div class="card-body">
+                    <form id="cardRecommendForm" class="property-form" onsubmit="return false;">
+                        <input type="hidden" id="cardRecommendId" value="">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>대표 이미지</label>
+                                <input type="file" id="cardRecommendImage" accept="image/*">
+                                <input type="hidden" id="cardRecommendImageUrl" value="">
+                                <div class="card-image-preview" id="cardRecommendPreview"></div>
+                            </div>
+                            <div class="form-group">
+                                <label>가격</label>
+                                <input type="text" id="cardRecommendPrice" placeholder="예: 시세 문의 / 전세 3억">
+                            </div>
+                            <div class="form-group">
+                                <label>지역 *</label>
+                                <input type="text" id="cardRecommendArea" placeholder="예: 수영구 민락동" required>
+                            </div>
+                            <div class="form-group">
+                                <label>매물명 *</label>
+                                <input type="text" id="cardRecommendName" placeholder="예: 타워더모스트" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group" style="flex: 2;">
+                                <label>특징 (쉼표 구분)</label>
+                                <input type="text" id="cardRecommendFeatures" placeholder="예: 오션뷰, 즉시입주, 주차가능">
+                            </div>
+                            <div class="form-group">
+                                <label>정렬</label>
+                                <input type="number" id="cardRecommendSort" value="0">
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-secondary" onclick="resetCardRecommendForm()">초기화</button>
+                            <button type="button" class="btn btn-primary" onclick="saveCardRecommend()">
+                                <i class="fas fa-save"></i> 저장
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top: 20px;">
+                <div class="card-header">
+                    <h3>등록된 추천 매물</h3>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>이미지</th>
+                                    <th>가격</th>
+                                    <th>지역</th>
+                                    <th>매물명</th>
+                                    <th>특징</th>
+                                    <th>관리</th>
+                                </tr>
+                            </thead>
+                            <tbody id="cardRecommendTableBody">
+                                <tr><td colspan="6" class="empty-message">불러오는 중...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
     </main>
 
     <!-- 비밀번호 변경 모달 (jemin 전용, 매물 모달과 동일 구조) -->
@@ -785,6 +971,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/script.js"></script>
+    <script src="js/card-admin.js"></script>
 </body>
 </html>
 

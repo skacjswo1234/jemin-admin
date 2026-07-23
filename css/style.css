@@ -249,6 +249,58 @@ body {
     width: 20px;
 }
 
+.nav-group > .nav-group-toggle {
+    cursor: pointer;
+}
+
+.nav-group .nav-chevron {
+    margin-left: auto;
+    font-size: 12px;
+    width: auto;
+    transition: transform 0.2s ease;
+}
+
+.nav-group.open .nav-chevron {
+    transform: rotate(180deg);
+}
+
+.nav-submenu {
+    list-style: none;
+    display: none;
+    background: rgba(0, 0, 0, 0.15);
+    padding: 4px 0 8px;
+}
+
+.nav-group.open .nav-submenu {
+    display: block;
+}
+
+.nav-submenu .nav-item a {
+    padding-left: 48px;
+    font-size: 14px;
+}
+
+.card-image-preview {
+    margin-top: 10px;
+    min-height: 0;
+}
+
+.card-image-preview img {
+    width: 120px;
+    height: 90px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.card-thumb {
+    width: 64px;
+    height: 48px;
+    object-fit: cover;
+    border-radius: 6px;
+    background: var(--bg-tertiary);
+}
+
 /* 메인 콘텐츠 */
 .main-content {
     margin-left: var(--sidebar-width);
