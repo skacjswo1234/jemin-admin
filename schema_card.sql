@@ -28,5 +28,19 @@ CREATE TABLE IF NOT EXISTS card_recommendations (
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+CREATE TABLE IF NOT EXISTS card_reviews (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  image_url TEXT,
+  content TEXT NOT NULL DEFAULT '',
+  author_name TEXT NOT NULL DEFAULT '',
+  visit_date TEXT NOT NULL DEFAULT '',
+  rating INTEGER NOT NULL DEFAULT 5,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  del_yn TEXT NOT NULL DEFAULT 'N',
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 CREATE INDEX IF NOT EXISTS idx_card_contracts_del ON card_contracts(del_yn, sort_order, id);
 CREATE INDEX IF NOT EXISTS idx_card_recommendations_del ON card_recommendations(del_yn, sort_order, id);
+CREATE INDEX IF NOT EXISTS idx_card_reviews_del ON card_reviews(del_yn, sort_order, id);

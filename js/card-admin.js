@@ -2,7 +2,8 @@
 
 const cardAdminState = {
   contracts: [],
-  recommendations: []
+  recommendations: [],
+  reviews: []
 };
 
 function escapeHtml(str) {
@@ -457,6 +458,170 @@ async function deleteCardRecommend(id) {
   }
 }
 
+/* ---------- 고객 후기 ---------- */
+function resetCardReviewForm() {
+  document.getElementById('cardReviewId').value = '';
+  document.getElementById('cardReviewImage').value = '';
+  document.getElementById('cardReviewImageUrl').value = '';
+  document.getElementById('cardReviewAuthor').value = '';
+  document.getElementById('cardReviewContent').value = '';
+  document.getElementById('cardReviewVisitDate').value = '';
+  document.getElementById('cardReviewRating').value = '5';
+  document.getElementById('cardReviewSort').value = '0';
+  document.getElementById('cardReviewFormTitle').textContent = '새 후기 등록';
+  const badge = document.getElementById('cardReviewModeBadge');
+  if (badge) {
+    badge.textContent = '신규';
+    badge.classList.remove('is-edit');
+  }
+  setDropzonePreview('cardReviewPreview', 'cardReviewDropEmpty', '');
+}
+
+function renderReviewGrid(rows) {
+  const grid = document.getElementById('cardReviewGrid');
+  const count = document.getElementById('cardReviewCount');
+  if (count) count.textContent = String(rows.length);
+  if (!grid) return;
+
+  if (!rows.length) {
+    grid.innerHTML = `
+      <div class="mcard-empty">
+        <i class="fas fa-comment-dots"></i>
+        <p>아직 등록된 후기가 없습니다.<br>사진과 후기 내용만 입력해 저장하세요.</p>
+      </div>`;
+    return;
+  }
+
+  grid.innerHTML = rows
+    .map((row) => {
+      const img = row.image_url
+        ? `<img src="${escapeHtml(row.image_url)}" alt="">`
+        : `<div class="mcard-item__noimg"><i class="fas fa-image"></i></div>`;
+      const stars = '★'.repeat(Math.min(5, Math.max(1, Number(row.rating) || 5)));
+      return `
+        <article class="mcard-item">
+          <div class="mcard-item__media">${img}</div>
+          <div class="mcard-item__body">
+            <p class="mcard-item__area">${stars} · ${escapeHtml(row.author_name || '')}</p>
+            <h4 class="mcard-item__name">${escapeHtml((row.content || '').slice(0, 48))}${(row.content || '').length > 48 ? '…' : ''}</h4>
+            <p class="mcard-item__meta">${escapeHtml(row.visit_date || '')}</p>
+          </div>
+          <div class="mcard-item__actions">
+            <button type="button" class="btn btn-sm btn-secondary" onclick="editCardReviewById(${row.id})">
+              <i class="fas fa-edit"></i> 수정
+            </button>
+            <button type="button" class="btn btn-sm btn-danger" onclick="deleteCardReview(${row.id})">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+        </article>`;
+    })
+    .join('');
+}
+
+async function loadCardReviews() {
+  const grid = document.getElementById('cardReviewGrid');
+  if (grid) grid.innerHTML = '<div class="mcard-empty">불러오는 중...</div>';
+
+  try {
+    const res = await apiFetch('/api/card/reviews');
+    const rows = await res.json();
+    if (!res.ok) throw new Error(rows.error || '목록 조회 실패');
+    cardAdminState.reviews = Array.isArray(rows) ? rows : [];
+    renderReviewGrid(cardAdminState.reviews);
+  } catch (err) {
+    if (grid) {
+      grid.innerHTML = `<div class="mcard-empty">${escapeHtml(err.message)}</div>`;
+    }
+  }
+}
+
+function editCardReviewById(id) {
+  const row = cardAdminState.reviews.find((r) => Number(r.id) === Number(id));
+  if (!row) return;
+  editCardReview(row);
+}
+
+function editCardReview(row) {
+  document.getElementById('cardReviewId').value = row.id;
+  document.getElementById('cardReviewImage').value = '';
+  document.getElementById('cardReviewImageUrl').value = row.image_url || '';
+  document.getElementById('cardReviewAuthor').value = row.author_name || '';
+  document.getElementById('cardReviewContent').value = row.content || '';
+  document.getElementById('cardReviewVisitDate').value = row.visit_date || '';
+  document.getElementById('cardReviewRating').value = row.rating ?? 5;
+  document.getElementById('cardReviewSort').value = row.sort_order ?? 0;
+  document.getElementById('cardReviewFormTitle').textContent = '후기 수정';
+  const badge = document.getElementById('cardReviewModeBadge');
+  if (badge) {
+    badge.textContent = '수정';
+    badge.classList.add('is-edit');
+  }
+  setDropzonePreview('cardReviewPreview', 'cardReviewDropEmpty', row.image_url || '');
+  document.querySelector('#card-reviews .mcard-editor')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+async function saveCardReview() {
+  try {
+    setSaving('cardReviewSaveBtn', true);
+    const id = document.getElementById('cardReviewId').value;
+    let imageUrl = document.getElementById('cardReviewImageUrl').value;
+    const fileInput = document.getElementById('cardReviewImage');
+    if (fileInput.files?.[0]) {
+      imageUrl = await uploadCardImage(fileInput, 'card-reviews');
+      document.getElementById('cardReviewImageUrl').value = imageUrl;
+      setDropzonePreview('cardReviewPreview', 'cardReviewDropEmpty', imageUrl);
+    }
+
+    const payload = {
+      image_url: imageUrl || null,
+      author_name: document.getElementById('cardReviewAuthor').value.trim(),
+      content: document.getElementById('cardReviewContent').value.trim(),
+      visit_date: document.getElementById('cardReviewVisitDate').value.trim(),
+      rating: Number(document.getElementById('cardReviewRating').value) || 5,
+      sort_order: Number(document.getElementById('cardReviewSort').value) || 0
+    };
+
+    if (!payload.author_name || !payload.content) {
+      alert('닉네임과 후기 내용은 필수입니다.');
+      return;
+    }
+
+    const url = id ? `/api/card/reviews/${id}` : '/api/card/reviews';
+    const method = id ? 'PUT' : 'POST';
+    const res = await apiFetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || '저장 실패');
+
+    alert('저장되었습니다. 모바일 명함에 곧 반영됩니다.');
+    resetCardReviewForm();
+    loadCardReviews();
+  } catch (err) {
+    alert(err.message || '저장 중 오류');
+  } finally {
+    setSaving('cardReviewSaveBtn', false);
+  }
+}
+
+async function deleteCardReview(id) {
+  if (!confirm('이 후기를 삭제할까요?')) return;
+  try {
+    const res = await apiFetch(`/api/card/reviews/${id}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || '삭제 실패');
+    if (String(document.getElementById('cardReviewId').value) === String(id)) {
+      resetCardReviewForm();
+    }
+    loadCardReviews();
+  } catch (err) {
+    alert(err.message || '삭제 중 오류');
+  }
+}
+
 function initCardAdminNav() {
   document.querySelectorAll('.nav-group-toggle').forEach((toggle) => {
     toggle.addEventListener('click', (e) => {
@@ -479,6 +644,14 @@ function initCardAdminNav() {
     previewId: 'cardRecommendPreview',
     emptyId: 'cardRecommendDropEmpty',
     urlFieldId: 'cardRecommendImageUrl'
+  });
+
+  bindDropzone({
+    zoneId: 'cardReviewDropzone',
+    inputId: 'cardReviewImage',
+    previewId: 'cardReviewPreview',
+    emptyId: 'cardReviewDropEmpty',
+    urlFieldId: 'cardReviewImageUrl'
   });
 
   // 기본 거래유형 힌트

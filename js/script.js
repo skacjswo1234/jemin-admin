@@ -446,6 +446,10 @@ function switchTab(tabName) {
         document.getElementById('navCardGroup')?.classList.add('open');
         if (typeof loadCardRecommendations === 'function') loadCardRecommendations();
     }
+    if (tabName === 'card-reviews') {
+        document.getElementById('navCardGroup')?.classList.add('open');
+        if (typeof loadCardReviews === 'function') loadCardReviews();
+    }
 
     // 통계 탭일 경우 차트 렌더링
     if (tabName === 'stats') {

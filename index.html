@@ -78,6 +78,12 @@
                                 <span>오늘의 추천 매물</span>
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a href="#" data-tab="card-reviews">
+                                <i class="fas fa-comment-dots"></i>
+                                <span>고객 후기</span>
+                            </a>
+                        </li>
                     </ul>
                 </li>
                 <li class="nav-item">
@@ -884,6 +890,91 @@
                         <span class="mcard-count" id="cardRecommendCount">0</span>
                     </div>
                     <div class="mcard-grid" id="cardRecommendGrid">
+                        <div class="mcard-empty">불러오는 중...</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 모바일명함: 고객 후기 -->
+        <section class="content-tab" id="card-reviews">
+            <div class="page-header mcard-page-header">
+                <div>
+                    <h2>고객 후기</h2>
+                    <p>네이버 리뷰형 카드 · 사진 + 후기 내용만 등록하면 됩니다</p>
+                </div>
+                <button type="button" class="btn btn-primary" onclick="resetCardReviewForm(); document.getElementById('cardReviewAuthor')?.focus();">
+                    <i class="fas fa-plus"></i> 새 후기 추가
+                </button>
+            </div>
+
+            <div class="mcard-tip">
+                <i class="fas fa-comment-dots"></i>
+                <span>여기 저장한 내용이 <strong>모바일 명함 → 고객 후기</strong>에 네이버 리뷰 카드 스타일로 무한 슬라이드됩니다.</span>
+            </div>
+
+            <div class="mcard-layout">
+                <div class="mcard-editor card">
+                    <div class="card-header">
+                        <h3 id="cardReviewFormTitle">새 후기 등록</h3>
+                        <span class="mcard-badge" id="cardReviewModeBadge">신규</span>
+                    </div>
+                    <div class="card-body">
+                        <form id="cardReviewForm" class="mcard-form" onsubmit="return false;">
+                            <input type="hidden" id="cardReviewId" value="">
+                            <input type="hidden" id="cardReviewImageUrl" value="">
+                            <input type="file" id="cardReviewImage" accept="image/*" hidden>
+
+                            <div class="mcard-dropzone" id="cardReviewDropzone" role="button" tabindex="0" aria-label="리뷰 사진 업로드">
+                                <div class="mcard-dropzone__empty" id="cardReviewDropEmpty">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                    <strong>리뷰 사진을 올려주세요</strong>
+                                    <span>네이버처럼 카드 상단에 표시됩니다</span>
+                                </div>
+                                <div class="mcard-dropzone__preview" id="cardReviewPreview" hidden></div>
+                            </div>
+
+                            <div class="mcard-fields">
+                                <div class="form-group">
+                                    <label>닉네임 *</label>
+                                    <input type="text" id="cardReviewAuthor" placeholder="예: 이○○" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>후기 내용 *</label>
+                                    <textarea id="cardReviewContent" rows="4" placeholder="고객이 남긴 후기 내용을 입력하세요" required></textarea>
+                                </div>
+                                <div class="mcard-fields__row">
+                                    <div class="form-group">
+                                        <label>방문/작성일</label>
+                                        <input type="text" id="cardReviewVisitDate" placeholder="예: 2026.07.20">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>별점 (1~5)</label>
+                                        <input type="number" id="cardReviewRating" min="1" max="5" value="5">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label>정렬 (작을수록 앞)</label>
+                                    <input type="number" id="cardReviewSort" value="0">
+                                </div>
+                            </div>
+
+                            <div class="mcard-actions">
+                                <button type="button" class="btn btn-secondary" onclick="resetCardReviewForm()">취소</button>
+                                <button type="button" class="btn btn-primary btn-lg" id="cardReviewSaveBtn" onclick="saveCardReview()">
+                                    <i class="fas fa-check"></i> 저장하기
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="mcard-list-wrap">
+                    <div class="mcard-list-head">
+                        <h3>등록된 후기</h3>
+                        <span class="mcard-count" id="cardReviewCount">0</span>
+                    </div>
+                    <div class="mcard-grid" id="cardReviewGrid">
                         <div class="mcard-empty">불러오는 중...</div>
                     </div>
                 </div>
