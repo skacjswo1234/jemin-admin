@@ -280,6 +280,91 @@ body {
     font-size: 14px;
 }
 
+/* 모바일명함관리 — 하단 분리 + 신규 강조 */
+.nav-group--mcard {
+    margin: 18px 12px 10px;
+    border-radius: 14px;
+    overflow: hidden;
+    background: linear-gradient(165deg, rgba(37, 99, 235, 0.22) 0%, rgba(37, 99, 235, 0.08) 100%);
+    border: 1px solid rgba(96, 165, 250, 0.45);
+    box-shadow:
+        0 0 0 1px rgba(37, 99, 235, 0.12),
+        0 8px 20px rgba(37, 99, 235, 0.12);
+}
+
+.nav-mcard-divider {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px 2px;
+}
+
+.nav-mcard-divider::before,
+.nav-mcard-divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(147, 197, 253, 0.7), transparent);
+}
+
+.nav-mcard-divider span {
+    flex-shrink: 0;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: #93c5fd;
+    text-transform: uppercase;
+}
+
+.nav-group--mcard > .nav-group-toggle {
+    color: #dbeafe !important;
+    border-left-color: transparent !important;
+    font-weight: 650;
+}
+
+.nav-group--mcard > .nav-group-toggle:hover {
+    background: rgba(37, 99, 235, 0.28) !important;
+    color: #fff !important;
+}
+
+.nav-group--mcard.active > .nav-group-toggle,
+.nav-group--mcard .nav-submenu .nav-item.active a {
+    background: rgba(37, 99, 235, 0.35) !important;
+    color: #fff !important;
+    border-left-color: #60a5fa !important;
+}
+
+.nav-group--mcard .nav-submenu {
+    background: rgba(15, 23, 42, 0.35);
+}
+
+.nav-group--mcard .nav-submenu .nav-item a {
+    color: #bfdbfe;
+}
+
+.nav-group--mcard .nav-submenu .nav-item a:hover {
+    background: rgba(37, 99, 235, 0.25);
+    color: #fff;
+}
+
+.nav-new-badge {
+    margin-left: auto;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: #2563eb;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    line-height: 1.4;
+    box-shadow: 0 0 12px rgba(37, 99, 235, 0.55);
+}
+
+.nav-group--mcard .nav-chevron {
+    margin-left: 8px;
+    color: #93c5fd;
+}
+
 /* ---------- 모바일 명함 관리 (기존 매물 UI와 분리) ---------- */
 .mcard-page-header {
     display: flex;
