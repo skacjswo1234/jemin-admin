@@ -1,4 +1,9 @@
-/* 모바일 명함 관리 (최근 계약 / 추천 매물) — 기존 properties 로직과 분리 */
+/* 모바일 명함 관리 (최근 계약 / 추천 매물) — 기존 properties 로직·테이블과 완전 분리 */
+
+const cardAdminState = {
+  contracts: [],
+  recommendations: []
+};
 
 function escapeHtml(str) {
   return String(str ?? '')
@@ -25,13 +30,93 @@ async function uploadCardImage(fileInput, folder) {
   return data.url;
 }
 
-function setPreview(previewEl, url) {
-  if (!previewEl) return;
+function setDropzonePreview(previewId, emptyId, url) {
+  const preview = document.getElementById(previewId);
+  const empty = document.getElementById(emptyId);
+  if (!preview || !empty) return;
+
   if (url) {
-    previewEl.innerHTML = `<img src="${escapeHtml(url)}" alt="preview">`;
+    preview.hidden = false;
+    empty.hidden = true;
+    preview.innerHTML = `
+      <img src="${escapeHtml(url)}" alt="미리보기">
+      <button type="button" class="mcard-dropzone__change" onclick="event.stopPropagation();">
+        <i class="fas fa-sync-alt"></i> 사진 바꾸기
+      </button>
+    `;
   } else {
-    previewEl.innerHTML = '';
+    preview.hidden = true;
+    empty.hidden = false;
+    preview.innerHTML = '';
   }
+}
+
+function setSaving(btnId, saving) {
+  const btn = document.getElementById(btnId);
+  if (!btn) return;
+  btn.disabled = saving;
+  btn.innerHTML = saving
+    ? '<i class="fas fa-spinner fa-spin"></i> 저장 중...'
+    : '<i class="fas fa-check"></i> 저장하기';
+}
+
+function bindDropzone({ zoneId, inputId, previewId, emptyId, urlFieldId }) {
+  const zone = document.getElementById(zoneId);
+  const input = document.getElementById(inputId);
+  if (!zone || !input) return;
+
+  const openPicker = () => input.click();
+
+  zone.addEventListener('click', (e) => {
+    if (e.target.closest('.mcard-dropzone__change') || e.target.closest('button')) {
+      openPicker();
+      return;
+    }
+    openPicker();
+  });
+
+  zone.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      openPicker();
+    }
+  });
+
+  ['dragenter', 'dragover'].forEach((ev) => {
+    zone.addEventListener(ev, (e) => {
+      e.preventDefault();
+      zone.classList.add('is-dragover');
+    });
+  });
+  ['dragleave', 'drop'].forEach((ev) => {
+    zone.addEventListener(ev, (e) => {
+      e.preventDefault();
+      zone.classList.remove('is-dragover');
+    });
+  });
+
+  zone.addEventListener('drop', (e) => {
+    const file = e.dataTransfer?.files?.[0];
+    if (!file || !file.type.startsWith('image/')) {
+      alert('이미지 파일만 올릴 수 있습니다.');
+      return;
+    }
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    input.files = dt.files;
+    const localUrl = URL.createObjectURL(file);
+    setDropzonePreview(previewId, emptyId, localUrl);
+  });
+
+  input.addEventListener('change', () => {
+    const file = input.files?.[0];
+    if (!file) return;
+    const localUrl = URL.createObjectURL(file);
+    setDropzonePreview(previewId, emptyId, localUrl);
+    if (urlFieldId) {
+      // 새 파일 선택 시 저장 전까지는 기존 URL 유지, 미리보기만 갱신
+    }
+  });
 }
 
 /* ---------- 최근 계약 ---------- */
@@ -41,55 +126,86 @@ function resetCardContractForm() {
   document.getElementById('cardContractImageUrl').value = '';
   document.getElementById('cardContractArea').value = '';
   document.getElementById('cardContractName').value = '';
-  document.getElementById('cardContractDealType').value = '';
-  document.getElementById('cardContractSize').value = '';
+  document.getElementById('cardContractDealType').value = '상가임대';
+  document.getElementById('cardContractSize').value = '점포';
   document.getElementById('cardContractMonth').value = '';
   document.getElementById('cardContractSort').value = '0';
   document.getElementById('cardContractFormTitle').textContent = '새 계약 등록';
-  setPreview(document.getElementById('cardContractPreview'), '');
+  const badge = document.getElementById('cardContractModeBadge');
+  if (badge) {
+    badge.textContent = '신규';
+    badge.classList.remove('is-edit');
+  }
+  setDropzonePreview('cardContractPreview', 'cardContractDropEmpty', '');
+}
+
+function renderContractGrid(rows) {
+  const grid = document.getElementById('cardContractGrid');
+  const count = document.getElementById('cardContractCount');
+  if (count) count.textContent = String(rows.length);
+  if (!grid) return;
+
+  if (!rows.length) {
+    grid.innerHTML = `
+      <div class="mcard-empty">
+        <i class="fas fa-image"></i>
+        <p>아직 등록된 계약이 없습니다.<br>왼쪽에서 사진과 상호만 입력해 저장하세요.</p>
+      </div>`;
+    return;
+  }
+
+  grid.innerHTML = rows
+    .map((row) => {
+      const img = row.image_url
+        ? `<img src="${escapeHtml(row.image_url)}" alt="">`
+        : `<div class="mcard-item__noimg"><i class="fas fa-image"></i></div>`;
+      return `
+        <article class="mcard-item">
+          <div class="mcard-item__media">${img}</div>
+          <div class="mcard-item__body">
+            <p class="mcard-item__area">${escapeHtml(row.area || '')}</p>
+            <h4 class="mcard-item__name">${escapeHtml(row.name || '')}</h4>
+            <p class="mcard-item__meta">${escapeHtml([row.deal_type, row.size, row.contract_month].filter(Boolean).join(' · '))}</p>
+          </div>
+          <div class="mcard-item__actions">
+            <button type="button" class="btn btn-sm btn-secondary" onclick="editCardContractById(${row.id})">
+              <i class="fas fa-edit"></i> 수정
+            </button>
+            <button type="button" class="btn btn-sm btn-danger" onclick="deleteCardContract(${row.id})">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+        </article>`;
+    })
+    .join('');
 }
 
 async function loadCardContracts() {
-  const tbody = document.getElementById('cardContractTableBody');
-  if (!tbody) return;
-  tbody.innerHTML = '<tr><td colspan="7" class="empty-message">불러오는 중...</td></tr>';
+  const grid = document.getElementById('cardContractGrid');
+  if (grid) grid.innerHTML = '<div class="mcard-empty">불러오는 중...</div>';
 
   try {
     const res = await apiFetch('/api/card/contracts');
     const rows = await res.json();
     if (!res.ok) throw new Error(rows.error || '목록 조회 실패');
-
-    if (!rows.length) {
-      tbody.innerHTML = '<tr><td colspan="7" class="empty-message">등록된 계약이 없습니다.</td></tr>';
-      return;
-    }
-
-    tbody.innerHTML = rows
-      .map((row) => {
-        const img = row.image_url
-          ? `<img class="card-thumb" src="${escapeHtml(row.image_url)}" alt="">`
-          : '<span style="color:var(--text-secondary);font-size:12px;">없음</span>';
-        return `<tr>
-          <td>${img}</td>
-          <td>${escapeHtml(row.area)}</td>
-          <td>${escapeHtml(row.name)}</td>
-          <td>${escapeHtml(row.deal_type)}</td>
-          <td>${escapeHtml(row.size)}</td>
-          <td>${escapeHtml(row.contract_month)}</td>
-          <td>
-            <button class="btn btn-sm btn-secondary" onclick='editCardContract(${JSON.stringify(row)})'><i class="fas fa-edit"></i></button>
-            <button class="btn btn-sm btn-danger" onclick="deleteCardContract(${row.id})"><i class="fas fa-trash"></i></button>
-          </td>
-        </tr>`;
-      })
-      .join('');
+    cardAdminState.contracts = Array.isArray(rows) ? rows : [];
+    renderContractGrid(cardAdminState.contracts);
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="7" class="empty-message">${escapeHtml(err.message)}</td></tr>`;
+    if (grid) {
+      grid.innerHTML = `<div class="mcard-empty">${escapeHtml(err.message)}</div>`;
+    }
   }
+}
+
+function editCardContractById(id) {
+  const row = cardAdminState.contracts.find((r) => Number(r.id) === Number(id));
+  if (!row) return;
+  editCardContract(row);
 }
 
 function editCardContract(row) {
   document.getElementById('cardContractId').value = row.id;
+  document.getElementById('cardContractImage').value = '';
   document.getElementById('cardContractImageUrl').value = row.image_url || '';
   document.getElementById('cardContractArea').value = row.area || '';
   document.getElementById('cardContractName').value = row.name || '';
@@ -98,19 +214,25 @@ function editCardContract(row) {
   document.getElementById('cardContractMonth').value = row.contract_month || '';
   document.getElementById('cardContractSort').value = row.sort_order ?? 0;
   document.getElementById('cardContractFormTitle').textContent = '계약 수정';
-  setPreview(document.getElementById('cardContractPreview'), row.image_url || '');
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  const badge = document.getElementById('cardContractModeBadge');
+  if (badge) {
+    badge.textContent = '수정';
+    badge.classList.add('is-edit');
+  }
+  setDropzonePreview('cardContractPreview', 'cardContractDropEmpty', row.image_url || '');
+  document.querySelector('#card-contracts .mcard-editor')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 async function saveCardContract() {
   try {
+    setSaving('cardContractSaveBtn', true);
     const id = document.getElementById('cardContractId').value;
     let imageUrl = document.getElementById('cardContractImageUrl').value;
     const fileInput = document.getElementById('cardContractImage');
     if (fileInput.files?.[0]) {
       imageUrl = await uploadCardImage(fileInput, 'card-contracts');
       document.getElementById('cardContractImageUrl').value = imageUrl;
-      setPreview(document.getElementById('cardContractPreview'), imageUrl);
+      setDropzonePreview('cardContractPreview', 'cardContractDropEmpty', imageUrl);
     }
 
     const payload = {
@@ -124,7 +246,7 @@ async function saveCardContract() {
     };
 
     if (!payload.area || !payload.name) {
-      alert('지역과 아파트명은 필수입니다.');
+      alert('지점/지역과 상호는 필수입니다.');
       return;
     }
 
@@ -138,11 +260,13 @@ async function saveCardContract() {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || '저장 실패');
 
-    alert('저장되었습니다.');
+    alert('저장되었습니다. 모바일 명함에 곧 반영됩니다.');
     resetCardContractForm();
     loadCardContracts();
   } catch (err) {
     alert(err.message || '저장 중 오류');
+  } finally {
+    setSaving('cardContractSaveBtn', false);
   }
 }
 
@@ -152,6 +276,9 @@ async function deleteCardContract(id) {
     const res = await apiFetch(`/api/card/contracts/${id}`, { method: 'DELETE' });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || '삭제 실패');
+    if (String(document.getElementById('cardContractId').value) === String(id)) {
+      resetCardContractForm();
+    }
     loadCardContracts();
   } catch (err) {
     alert(err.message || '삭제 중 오류');
@@ -169,50 +296,82 @@ function resetCardRecommendForm() {
   document.getElementById('cardRecommendFeatures').value = '';
   document.getElementById('cardRecommendSort').value = '0';
   document.getElementById('cardRecommendFormTitle').textContent = '새 추천 매물 등록';
-  setPreview(document.getElementById('cardRecommendPreview'), '');
+  const badge = document.getElementById('cardRecommendModeBadge');
+  if (badge) {
+    badge.textContent = '신규';
+    badge.classList.remove('is-edit');
+  }
+  setDropzonePreview('cardRecommendPreview', 'cardRecommendDropEmpty', '');
+}
+
+function renderRecommendGrid(rows) {
+  const grid = document.getElementById('cardRecommendGrid');
+  const count = document.getElementById('cardRecommendCount');
+  if (count) count.textContent = String(rows.length);
+  if (!grid) return;
+
+  if (!rows.length) {
+    grid.innerHTML = `
+      <div class="mcard-empty">
+        <i class="fas fa-star"></i>
+        <p>아직 등록된 추천 매물이 없습니다.<br>사진과 매물명만 넣어도 충분합니다.</p>
+      </div>`;
+    return;
+  }
+
+  grid.innerHTML = rows
+    .map((row) => {
+      const img = row.image_url
+        ? `<img src="${escapeHtml(row.image_url)}" alt="">`
+        : `<div class="mcard-item__noimg"><i class="fas fa-image"></i></div>`;
+      const features = Array.isArray(row.features) ? row.features.join(' · ') : '';
+      return `
+        <article class="mcard-item">
+          <div class="mcard-item__media">${img}</div>
+          <div class="mcard-item__body">
+            <p class="mcard-item__area">${escapeHtml(row.price || row.area || '')}</p>
+            <h4 class="mcard-item__name">${escapeHtml(row.name || '')}</h4>
+            <p class="mcard-item__meta">${escapeHtml([row.area, features].filter(Boolean).join(' · '))}</p>
+          </div>
+          <div class="mcard-item__actions">
+            <button type="button" class="btn btn-sm btn-secondary" onclick="editCardRecommendById(${row.id})">
+              <i class="fas fa-edit"></i> 수정
+            </button>
+            <button type="button" class="btn btn-sm btn-danger" onclick="deleteCardRecommend(${row.id})">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+        </article>`;
+    })
+    .join('');
 }
 
 async function loadCardRecommendations() {
-  const tbody = document.getElementById('cardRecommendTableBody');
-  if (!tbody) return;
-  tbody.innerHTML = '<tr><td colspan="6" class="empty-message">불러오는 중...</td></tr>';
+  const grid = document.getElementById('cardRecommendGrid');
+  if (grid) grid.innerHTML = '<div class="mcard-empty">불러오는 중...</div>';
 
   try {
     const res = await apiFetch('/api/card/recommendations');
     const rows = await res.json();
     if (!res.ok) throw new Error(rows.error || '목록 조회 실패');
-
-    if (!rows.length) {
-      tbody.innerHTML = '<tr><td colspan="6" class="empty-message">등록된 추천 매물이 없습니다.</td></tr>';
-      return;
-    }
-
-    tbody.innerHTML = rows
-      .map((row) => {
-        const img = row.image_url
-          ? `<img class="card-thumb" src="${escapeHtml(row.image_url)}" alt="">`
-          : '<span style="color:var(--text-secondary);font-size:12px;">없음</span>';
-        const features = Array.isArray(row.features) ? row.features.join(', ') : '';
-        return `<tr>
-          <td>${img}</td>
-          <td>${escapeHtml(row.price)}</td>
-          <td>${escapeHtml(row.area)}</td>
-          <td>${escapeHtml(row.name)}</td>
-          <td>${escapeHtml(features)}</td>
-          <td>
-            <button class="btn btn-sm btn-secondary" onclick='editCardRecommend(${JSON.stringify(row)})'><i class="fas fa-edit"></i></button>
-            <button class="btn btn-sm btn-danger" onclick="deleteCardRecommend(${row.id})"><i class="fas fa-trash"></i></button>
-          </td>
-        </tr>`;
-      })
-      .join('');
+    cardAdminState.recommendations = Array.isArray(rows) ? rows : [];
+    renderRecommendGrid(cardAdminState.recommendations);
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="6" class="empty-message">${escapeHtml(err.message)}</td></tr>`;
+    if (grid) {
+      grid.innerHTML = `<div class="mcard-empty">${escapeHtml(err.message)}</div>`;
+    }
   }
+}
+
+function editCardRecommendById(id) {
+  const row = cardAdminState.recommendations.find((r) => Number(r.id) === Number(id));
+  if (!row) return;
+  editCardRecommend(row);
 }
 
 function editCardRecommend(row) {
   document.getElementById('cardRecommendId').value = row.id;
+  document.getElementById('cardRecommendImage').value = '';
   document.getElementById('cardRecommendImageUrl').value = row.image_url || '';
   document.getElementById('cardRecommendPrice').value = row.price || '';
   document.getElementById('cardRecommendArea').value = row.area || '';
@@ -222,19 +381,25 @@ function editCardRecommend(row) {
     : '';
   document.getElementById('cardRecommendSort').value = row.sort_order ?? 0;
   document.getElementById('cardRecommendFormTitle').textContent = '추천 매물 수정';
-  setPreview(document.getElementById('cardRecommendPreview'), row.image_url || '');
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  const badge = document.getElementById('cardRecommendModeBadge');
+  if (badge) {
+    badge.textContent = '수정';
+    badge.classList.add('is-edit');
+  }
+  setDropzonePreview('cardRecommendPreview', 'cardRecommendDropEmpty', row.image_url || '');
+  document.querySelector('#card-recommend .mcard-editor')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 async function saveCardRecommend() {
   try {
+    setSaving('cardRecommendSaveBtn', true);
     const id = document.getElementById('cardRecommendId').value;
     let imageUrl = document.getElementById('cardRecommendImageUrl').value;
     const fileInput = document.getElementById('cardRecommendImage');
     if (fileInput.files?.[0]) {
       imageUrl = await uploadCardImage(fileInput, 'card-recommendations');
       document.getElementById('cardRecommendImageUrl').value = imageUrl;
-      setPreview(document.getElementById('cardRecommendPreview'), imageUrl);
+      setDropzonePreview('cardRecommendPreview', 'cardRecommendDropEmpty', imageUrl);
     }
 
     const featuresRaw = document.getElementById('cardRecommendFeatures').value;
@@ -267,11 +432,13 @@ async function saveCardRecommend() {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || '저장 실패');
 
-    alert('저장되었습니다.');
+    alert('저장되었습니다. 모바일 명함에 곧 반영됩니다.');
     resetCardRecommendForm();
     loadCardRecommendations();
   } catch (err) {
     alert(err.message || '저장 중 오류');
+  } finally {
+    setSaving('cardRecommendSaveBtn', false);
   }
 }
 
@@ -281,6 +448,9 @@ async function deleteCardRecommend(id) {
     const res = await apiFetch(`/api/card/recommendations/${id}`, { method: 'DELETE' });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || '삭제 실패');
+    if (String(document.getElementById('cardRecommendId').value) === String(id)) {
+      resetCardRecommendForm();
+    }
     loadCardRecommendations();
   } catch (err) {
     alert(err.message || '삭제 중 오류');
@@ -295,19 +465,27 @@ function initCardAdminNav() {
     });
   });
 
-  // 이미지 선택 즉시 미리보기
-  document.getElementById('cardContractImage')?.addEventListener('change', (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const url = URL.createObjectURL(file);
-    setPreview(document.getElementById('cardContractPreview'), url);
+  bindDropzone({
+    zoneId: 'cardContractDropzone',
+    inputId: 'cardContractImage',
+    previewId: 'cardContractPreview',
+    emptyId: 'cardContractDropEmpty',
+    urlFieldId: 'cardContractImageUrl'
   });
-  document.getElementById('cardRecommendImage')?.addEventListener('change', (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const url = URL.createObjectURL(file);
-    setPreview(document.getElementById('cardRecommendPreview'), url);
+
+  bindDropzone({
+    zoneId: 'cardRecommendDropzone',
+    inputId: 'cardRecommendImage',
+    previewId: 'cardRecommendPreview',
+    emptyId: 'cardRecommendDropEmpty',
+    urlFieldId: 'cardRecommendImageUrl'
   });
+
+  // 기본 거래유형 힌트
+  const deal = document.getElementById('cardContractDealType');
+  const size = document.getElementById('cardContractSize');
+  if (deal && !deal.value) deal.value = '상가임대';
+  if (size && !size.value) size.value = '점포';
 }
 
 document.addEventListener('DOMContentLoaded', initCardAdminNav);
