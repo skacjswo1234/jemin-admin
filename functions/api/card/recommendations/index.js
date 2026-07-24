@@ -53,7 +53,7 @@ export async function onRequestGet(context) {
         features: parseFeatures(row.features)
       })),
       200,
-      { 'Cache-Control': 'public, max-age=30' }
+      { 'Cache-Control': 'public, max-age=5, must-revalidate' }
     );
   } catch (error) {
     console.error('card recommendations GET error:', error);

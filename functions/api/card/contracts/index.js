@@ -31,7 +31,8 @@ export async function onRequestGet(context) {
 
     const { results } = await env.DB.prepare(query).bind(delYn).all();
     return jsonResponse(results || [], 200, {
-      'Cache-Control': 'public, max-age=30'
+      // 수정 직후 관리자/명함 사이트에 이전 값이 남지 않도록 짧게만 캐시
+      'Cache-Control': 'public, max-age=5, must-revalidate'
     });
   } catch (error) {
     console.error('card contracts GET error:', error);

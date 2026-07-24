@@ -25,7 +25,7 @@ export async function onRequestGet(context) {
     ).all();
 
     return jsonResponse(results || [], 200, {
-      'Cache-Control': 'public, max-age=30'
+      'Cache-Control': 'public, max-age=5, must-revalidate'
     });
   } catch (error) {
     console.error('card reviews GET error:', error);

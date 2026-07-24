@@ -17,7 +17,7 @@ export async function onRequestGet(context) {
       .first();
 
     if (!row) return jsonResponse({ error: 'Not found' }, 404);
-    return jsonResponse(row);
+    return jsonResponse(row, 200, { 'Cache-Control': 'no-store' });
   } catch (error) {
     return jsonResponse({ error: error.message }, 500);
   }
@@ -29,7 +29,11 @@ export async function onRequestPut(context) {
     if (auth.error) return auth.error;
 
     const { env } = context;
-    const id = context.params.id;
+    const id = Number(context.params.id);
+    if (!Number.isFinite(id) || id <= 0) {
+      return jsonResponse({ error: '잘못된 ID입니다.' }, 400);
+    }
+
     const data = await context.request.json();
 
     const area = (data.area || '').trim();
@@ -38,7 +42,7 @@ export async function onRequestPut(context) {
       return jsonResponse({ error: '지역과 아파트명은 필수입니다.' }, 400);
     }
 
-    await env.DB.prepare(
+    const result = await env.DB.prepare(
       `UPDATE card_contracts SET
         image_url = ?,
         area = ?,
@@ -62,7 +66,19 @@ export async function onRequestPut(context) {
       )
       .run();
 
-    return jsonResponse({ success: true });
+    if (!result?.meta?.changes) {
+      return jsonResponse({ error: '수정할 계약을 찾을 수 없습니다.' }, 404);
+    }
+
+    const row = await env.DB.prepare(
+      'SELECT * FROM card_contracts WHERE id = ?'
+    )
+      .bind(id)
+      .first();
+
+    return jsonResponse({ success: true, item: row }, 200, {
+      'Cache-Control': 'no-store'
+    });
   } catch (error) {
     return jsonResponse({ error: error.message }, 500);
   }
@@ -73,14 +89,18 @@ export async function onRequestDelete(context) {
     const auth = await requireAuth(context);
     if (auth.error) return auth.error;
 
-    const id = context.params.id;
-    await context.env.DB.prepare(
-      `UPDATE card_contracts SET del_yn = 'Y', updated_at = datetime('now') WHERE id = ?`
+    const id = Number(context.params.id);
+    const result = await context.env.DB.prepare(
+      `UPDATE card_contracts SET del_yn = 'Y', updated_at = datetime('now') WHERE id = ? AND del_yn = 'N'`
     )
       .bind(id)
       .run();
 
-    return jsonResponse({ success: true });
+    if (!result?.meta?.changes) {
+      return jsonResponse({ error: '삭제할 계약을 찾을 수 없습니다.' }, 404);
+    }
+
+    return jsonResponse({ success: true }, 200, { 'Cache-Control': 'no-store' });
   } catch (error) {
     return jsonResponse({ error: error.message }, 500);
   }

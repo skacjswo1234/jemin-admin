@@ -249,12 +249,12 @@ body {
     width: 20px;
 }
 
-.nav-item--external a {
+.nav-group--mcard .nav-submenu .nav-item--external a {
     color: #7dd3a0;
 }
 
-.nav-item--external a:hover {
-    background-color: rgba(71, 215, 100, 0.1);
+.nav-group--mcard .nav-submenu .nav-item--external a:hover {
+    background-color: rgba(71, 215, 100, 0.12);
     color: #9ee4b5;
 }
 

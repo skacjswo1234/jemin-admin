@@ -186,7 +186,8 @@ async function loadCardContracts() {
   if (grid) grid.innerHTML = '<div class="mcard-empty">불러오는 중...</div>';
 
   try {
-    const res = await apiFetch('/api/card/contracts');
+    // all=1 → 인증 + Cache-Control: no-store (공개 목록 캐시와 분리)
+    const res = await apiFetch('/api/card/contracts?all=1');
     const rows = await res.json();
     if (!res.ok) throw new Error(rows.error || '목록 조회 실패');
     cardAdminState.contracts = Array.isArray(rows) ? rows : [];
@@ -227,7 +228,7 @@ function editCardContract(row) {
 async function saveCardContract() {
   try {
     setSaving('cardContractSaveBtn', true);
-    const id = document.getElementById('cardContractId').value;
+    const id = String(document.getElementById('cardContractId').value || '').trim();
     let imageUrl = document.getElementById('cardContractImageUrl').value;
     const fileInput = document.getElementById('cardContractImage');
     if (fileInput.files?.[0]) {
@@ -251,7 +252,7 @@ async function saveCardContract() {
       return;
     }
 
-    const url = id ? `/api/card/contracts/${id}` : '/api/card/contracts';
+    const url = id ? `/api/card/contracts/${encodeURIComponent(id)}` : '/api/card/contracts';
     const method = id ? 'PUT' : 'POST';
     const res = await apiFetch(url, {
       method,
@@ -261,9 +262,9 @@ async function saveCardContract() {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || '저장 실패');
 
-    alert('저장되었습니다. 모바일 명함에 곧 반영됩니다.');
+    alert(id ? '수정되었습니다. 목록에 바로 반영됩니다.' : '저장되었습니다. 모바일 명함에 곧 반영됩니다.');
     resetCardContractForm();
-    loadCardContracts();
+    await loadCardContracts();
   } catch (err) {
     alert(err.message || '저장 중 오류');
   } finally {
@@ -352,7 +353,7 @@ async function loadCardRecommendations() {
   if (grid) grid.innerHTML = '<div class="mcard-empty">불러오는 중...</div>';
 
   try {
-    const res = await apiFetch('/api/card/recommendations');
+    const res = await apiFetch('/api/card/recommendations?all=1');
     const rows = await res.json();
     if (!res.ok) throw new Error(rows.error || '목록 조회 실패');
     cardAdminState.recommendations = Array.isArray(rows) ? rows : [];
@@ -394,7 +395,7 @@ function editCardRecommend(row) {
 async function saveCardRecommend() {
   try {
     setSaving('cardRecommendSaveBtn', true);
-    const id = document.getElementById('cardRecommendId').value;
+    const id = String(document.getElementById('cardRecommendId').value || '').trim();
     let imageUrl = document.getElementById('cardRecommendImageUrl').value;
     const fileInput = document.getElementById('cardRecommendImage');
     if (fileInput.files?.[0]) {
@@ -423,7 +424,9 @@ async function saveCardRecommend() {
       return;
     }
 
-    const url = id ? `/api/card/recommendations/${id}` : '/api/card/recommendations';
+    const url = id
+      ? `/api/card/recommendations/${encodeURIComponent(id)}`
+      : '/api/card/recommendations';
     const method = id ? 'PUT' : 'POST';
     const res = await apiFetch(url, {
       method,
@@ -433,9 +436,9 @@ async function saveCardRecommend() {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || '저장 실패');
 
-    alert('저장되었습니다. 모바일 명함에 곧 반영됩니다.');
+    alert(id ? '수정되었습니다. 목록에 바로 반영됩니다.' : '저장되었습니다. 모바일 명함에 곧 반영됩니다.');
     resetCardRecommendForm();
-    loadCardRecommendations();
+    await loadCardRecommendations();
   } catch (err) {
     alert(err.message || '저장 중 오류');
   } finally {
@@ -524,7 +527,7 @@ async function loadCardReviews() {
   if (grid) grid.innerHTML = '<div class="mcard-empty">불러오는 중...</div>';
 
   try {
-    const res = await apiFetch('/api/card/reviews');
+    const res = await apiFetch('/api/card/reviews?all=1');
     const rows = await res.json();
     if (!res.ok) throw new Error(rows.error || '목록 조회 실패');
     cardAdminState.reviews = Array.isArray(rows) ? rows : [];
@@ -564,7 +567,7 @@ function editCardReview(row) {
 async function saveCardReview() {
   try {
     setSaving('cardReviewSaveBtn', true);
-    const id = document.getElementById('cardReviewId').value;
+    const id = String(document.getElementById('cardReviewId').value || '').trim();
     let imageUrl = document.getElementById('cardReviewImageUrl').value;
     const fileInput = document.getElementById('cardReviewImage');
     if (fileInput.files?.[0]) {
@@ -587,7 +590,7 @@ async function saveCardReview() {
       return;
     }
 
-    const url = id ? `/api/card/reviews/${id}` : '/api/card/reviews';
+    const url = id ? `/api/card/reviews/${encodeURIComponent(id)}` : '/api/card/reviews';
     const method = id ? 'PUT' : 'POST';
     const res = await apiFetch(url, {
       method,
@@ -597,9 +600,9 @@ async function saveCardReview() {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || '저장 실패');
 
-    alert('저장되었습니다. 모바일 명함에 곧 반영됩니다.');
+    alert(id ? '수정되었습니다. 목록에 바로 반영됩니다.' : '저장되었습니다. 모바일 명함에 곧 반영됩니다.');
     resetCardReviewForm();
-    loadCardReviews();
+    await loadCardReviews();
   } catch (err) {
     alert(err.message || '저장 중 오류');
   } finally {

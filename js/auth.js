@@ -66,7 +66,12 @@ async function apiFetch(url, options = {}) {
     ...getAuthHeaders()
   };
 
-  const response = await fetch(url, { ...options, headers });
+  // 관리자 화면은 항상 최신 DB 값을 보도록 브라우저/중간 캐시 우회
+  const response = await fetch(url, {
+    ...options,
+    headers,
+    cache: 'no-store'
+  });
 
   if (response.status === 401 || response.status === 403) {
     clearAuth();
