@@ -622,6 +622,159 @@ async function deleteCardReview(id) {
   }
 }
 
+/* ---------- 미리보기 모달 ---------- */
+function getCardFormImageUrl(fileInputId, urlFieldId) {
+  const fileInput = document.getElementById(fileInputId);
+  const file = fileInput?.files?.[0];
+  if (file) return URL.createObjectURL(file);
+  return document.getElementById(urlFieldId)?.value?.trim() || '';
+}
+
+function mediaOrPlaceholder(url, label) {
+  if (url) {
+    return `<img src="${escapeHtml(url)}" alt="">`;
+  }
+  return `
+    <div class="pv-contract__placeholder">
+      <i class="fas fa-image"></i>
+      <span>${escapeHtml(label || '사진 없음')}</span>
+    </div>`;
+}
+
+function buildContractPreviewHtml() {
+  const imageUrl = getCardFormImageUrl('cardContractImage', 'cardContractImageUrl');
+  const area = document.getElementById('cardContractArea')?.value.trim() || '지점 / 지역';
+  const name = document.getElementById('cardContractName')?.value.trim() || '상호 / 점포명';
+  const dealType = document.getElementById('cardContractDealType')?.value.trim() || '상가임대';
+  const size = document.getElementById('cardContractSize')?.value.trim() || '점포';
+  const month = document.getElementById('cardContractMonth')?.value.trim() || '계약월';
+
+  return `
+    <article class="pv-contract">
+      <div class="pv-contract__media">
+        ${mediaOrPlaceholder(imageUrl, '사진을 올려주세요')}
+        <span class="pv-badge">계약완료</span>
+      </div>
+      <div class="pv-contract__body">
+        <p class="pv-contract__area">${escapeHtml(area)}</p>
+        <h3 class="pv-contract__name">${escapeHtml(name)}</h3>
+        <div class="pv-contract__meta">
+          <span class="pv-chip">${escapeHtml(dealType)}</span>
+          <span class="pv-chip">${escapeHtml(size)}</span>
+          <span class="pv-chip">${escapeHtml(month)}</span>
+        </div>
+      </div>
+    </article>`;
+}
+
+function buildRecommendPreviewHtml() {
+  const imageUrl = getCardFormImageUrl('cardRecommendImage', 'cardRecommendImageUrl');
+  const price = document.getElementById('cardRecommendPrice')?.value.trim() || '가격 표기';
+  const area = document.getElementById('cardRecommendArea')?.value.trim() || '지역';
+  const name = document.getElementById('cardRecommendName')?.value.trim() || '매물명';
+  const featuresRaw = document.getElementById('cardRecommendFeatures')?.value.trim() || '';
+  const features = featuresRaw
+    ? featuresRaw.split(',').map((f) => f.trim()).filter(Boolean)
+    : ['특징'];
+
+  return `
+    <article class="pv-recommend">
+      <div class="pv-recommend__media">
+        ${
+          imageUrl
+            ? `<img src="${escapeHtml(imageUrl)}" alt="">`
+            : `<div class="pv-recommend__placeholder"><i class="fas fa-image"></i><span>사진을 올려주세요</span></div>`
+        }
+      </div>
+      <div class="pv-recommend__body">
+        <p class="pv-recommend__price">${escapeHtml(price)}</p>
+        <p class="pv-recommend__area">${escapeHtml(area)}</p>
+        <h3 class="pv-recommend__name">${escapeHtml(name)}</h3>
+        <div class="pv-recommend__features">
+          ${features.map((f) => `<span class="pv-chip">${escapeHtml(f)}</span>`).join('')}
+        </div>
+        <button type="button" class="pv-recommend__cta" tabindex="-1">이 매물 문의하기</button>
+      </div>
+    </article>`;
+}
+
+function buildReviewPreviewHtml() {
+  const imageUrl = getCardFormImageUrl('cardReviewImage', 'cardReviewImageUrl');
+  const author = document.getElementById('cardReviewAuthor')?.value.trim() || '닉네임';
+  const content = document.getElementById('cardReviewContent')?.value.trim() || '후기 내용을 입력하면 여기에 표시됩니다.';
+  const visitDate = document.getElementById('cardReviewVisitDate')?.value.trim();
+  const rating = Math.min(5, Math.max(1, Number(document.getElementById('cardReviewRating')?.value) || 5));
+  const initial = author.trim().charAt(0) || '고';
+  const dateLabel = visitDate ? `${visitDate} 방문` : '방문 인증';
+  const photo = imageUrl
+    ? `<div class="pv-review__photo"><img src="${escapeHtml(imageUrl)}" alt=""></div>`
+    : `<div class="pv-review__photo"><div class="pv-review__placeholder"><i class="fas fa-image"></i><span>사진 없음</span></div></div>`;
+
+  return `
+    <article class="pv-review">
+      <div class="pv-review__head">
+        <div class="pv-review__avatar" aria-hidden="true">${escapeHtml(initial)}</div>
+        <div class="pv-review__who">
+          <strong class="pv-review__name">${escapeHtml(author)}</strong>
+          <span class="pv-review__date">${escapeHtml(dateLabel)}</span>
+        </div>
+        <div class="pv-review__rating" aria-label="${rating}점">
+          <span class="pv-review__stars">${'★'.repeat(rating)}</span>
+          <span class="pv-review__score">${rating}.0</span>
+        </div>
+      </div>
+      <p class="pv-review__text">${escapeHtml(content)}</p>
+      ${photo}
+      <div class="pv-review__badge">방문인증</div>
+    </article>`;
+}
+
+function openCardPreview(type) {
+  const modal = document.getElementById('cardPreviewModal');
+  const stage = document.getElementById('cardPreviewStage');
+  const title = document.getElementById('cardPreviewTitle');
+  if (!modal || !stage) return;
+
+  const titles = {
+    contract: '최근 계약 카드 미리보기',
+    recommend: '추천 매물 카드 미리보기',
+    review: '고객 후기 카드 미리보기'
+  };
+
+  if (title) title.textContent = titles[type] || '카드 미리보기';
+
+  if (type === 'contract') stage.innerHTML = buildContractPreviewHtml();
+  else if (type === 'recommend') stage.innerHTML = buildRecommendPreviewHtml();
+  else if (type === 'review') stage.innerHTML = buildReviewPreviewHtml();
+  else return;
+
+  modal.classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeCardPreview() {
+  const modal = document.getElementById('cardPreviewModal');
+  const stage = document.getElementById('cardPreviewStage');
+  if (modal) modal.classList.remove('active');
+  if (stage) stage.innerHTML = '';
+  document.body.style.overflow = '';
+}
+
+function initCardPreviewModal() {
+  const modal = document.getElementById('cardPreviewModal');
+  if (!modal) return;
+
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) closeCardPreview();
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modal.classList.contains('active')) {
+      closeCardPreview();
+    }
+  });
+}
+
 function initCardAdminNav() {
   document.querySelectorAll('.nav-group-toggle').forEach((toggle) => {
     toggle.addEventListener('click', (e) => {
@@ -659,6 +812,8 @@ function initCardAdminNav() {
   const size = document.getElementById('cardContractSize');
   if (deal && !deal.value) deal.value = '상가임대';
   if (size && !size.value) size.value = '점포';
+
+  initCardPreviewModal();
 }
 
 document.addEventListener('DOMContentLoaded', initCardAdminNav);

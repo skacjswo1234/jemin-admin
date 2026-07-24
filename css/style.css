@@ -249,6 +249,15 @@ body {
     width: 20px;
 }
 
+.nav-item--external a {
+    color: #7dd3a0;
+}
+
+.nav-item--external a:hover {
+    background-color: rgba(71, 215, 100, 0.1);
+    color: #9ee4b5;
+}
+
 .nav-group > .nav-group-toggle {
     cursor: pointer;
 }
@@ -495,6 +504,7 @@ body {
 .mcard-actions {
     display: flex;
     justify-content: flex-end;
+    flex-wrap: wrap;
     gap: 10px;
     padding-top: 4px;
 }
@@ -502,6 +512,360 @@ body {
 .btn-lg {
     padding: 10px 18px;
     font-size: 15px;
+}
+
+/* 모바일 명함 카드 미리보기 모달 */
+.card-preview-modal {
+    max-width: 420px;
+}
+
+.card-preview-hint {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 16px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    font-size: 13px;
+}
+
+.card-preview-hint i {
+    color: var(--primary-color);
+}
+
+.card-preview-phone {
+    margin: 0 auto;
+    max-width: 340px;
+    padding: 18px 14px 22px;
+    border-radius: 28px;
+    background: linear-gradient(160deg, #f7f4ef 0%, #efe8dc 55%, #e8e1d4 100%);
+    border: 1px solid rgba(201, 162, 39, 0.28);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+
+.card-preview-phone__notch {
+    width: 88px;
+    height: 8px;
+    margin: 0 auto 14px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.12);
+}
+
+.card-preview-stage {
+    min-height: 120px;
+}
+
+.card-preview-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 0 25px 22px;
+    flex-wrap: wrap;
+}
+
+.card-preview-footer .btn {
+    text-decoration: none;
+}
+
+/* 미리보기: 계약 카드 */
+.pv-contract {
+    border-radius: 16px;
+    overflow: hidden;
+    background: #fff;
+    border: 1.5px solid transparent;
+    background:
+        linear-gradient(#fff, #fff) padding-box,
+        linear-gradient(135deg, #d4af37, #f0d78c, #c9a227) border-box;
+    box-shadow: 0 8px 22px rgba(184, 149, 44, 0.12);
+    color: #1a1a1a;
+}
+
+.pv-contract__media {
+    position: relative;
+    aspect-ratio: 4 / 3;
+    background: #eef1f5;
+    overflow: hidden;
+}
+
+.pv-contract__media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.pv-contract__placeholder,
+.pv-recommend__placeholder,
+.pv-review__placeholder {
+    width: 100%;
+    height: 100%;
+    min-height: 120px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    color: #9aa3af;
+    font-size: 12px;
+    font-weight: 600;
+    background: linear-gradient(135deg, #eef1f5 0%, #e4e8ee 100%);
+}
+
+.pv-contract__placeholder i,
+.pv-recommend__placeholder i,
+.pv-review__placeholder i {
+    font-size: 22px;
+    opacity: 0.45;
+}
+
+.pv-badge {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 7px 11px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    background: #03b26c;
+    color: #fff;
+}
+
+.pv-badge::before {
+    content: "";
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: #fff;
+}
+
+.pv-contract__body {
+    padding: 16px;
+    text-align: center;
+}
+
+.pv-contract__area {
+    font-size: 13px;
+    font-weight: 600;
+    color: #8b929c;
+    margin-bottom: 4px;
+}
+
+.pv-contract__name {
+    font-size: 18px;
+    font-weight: 750;
+    letter-spacing: -0.03em;
+    margin: 0 0 12px;
+    color: #1a1a1a;
+}
+
+.pv-contract__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: center;
+}
+
+.pv-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 10px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 650;
+    color: #4b5563;
+    background: #f1f3f6;
+}
+
+/* 미리보기: 추천 매물 */
+.pv-recommend {
+    border-radius: 16px;
+    overflow: hidden;
+    background:
+        linear-gradient(#fff, #fff) padding-box,
+        linear-gradient(135deg, #d4af37, #f0d78c, #c9a227) border-box;
+    border: 1.5px solid transparent;
+    box-shadow: 0 8px 22px rgba(184, 149, 44, 0.12);
+    color: #1a1a1a;
+}
+
+.pv-recommend__media {
+    aspect-ratio: 16 / 10;
+    background: #eef1f5;
+    overflow: hidden;
+}
+
+.pv-recommend__media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.pv-recommend__body {
+    padding: 18px;
+    text-align: center;
+}
+
+.pv-recommend__price {
+    font-size: 18px;
+    font-weight: 750;
+    letter-spacing: -0.03em;
+    margin: 0 0 4px;
+}
+
+.pv-recommend__area {
+    font-size: 12px;
+    font-weight: 500;
+    color: #8b929c;
+    margin: 0 0 2px;
+}
+
+.pv-recommend__name {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin: 0 0 12px;
+}
+
+.pv-recommend__features {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: center;
+    margin-bottom: 14px;
+}
+
+.pv-recommend__cta {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #c9a227, #d4af37);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: default;
+}
+
+/* 미리보기: 고객 후기 */
+.pv-review {
+    width: 100%;
+    max-width: 280px;
+    margin: 0 auto;
+    background: #fff;
+    border: 1px solid #e8e8e8;
+    border-radius: 14px;
+    padding: 14px 14px 12px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    color: #222;
+}
+
+.pv-review__head {
+    display: grid;
+    grid-template-columns: 36px 1fr auto;
+    gap: 10px;
+    align-items: center;
+}
+
+.pv-review__avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(145deg, #03c75a, #00a845);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pv-review__who {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.pv-review__name {
+    font-size: 13px;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.pv-review__date {
+    font-size: 11px;
+    color: #8e8e8e;
+}
+
+.pv-review__rating {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 1px;
+}
+
+.pv-review__stars {
+    color: #03c75a;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    line-height: 1;
+}
+
+.pv-review__score {
+    font-size: 12px;
+    font-weight: 700;
+    color: #03c75a;
+}
+
+.pv-review__text {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.55;
+    color: #424242;
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-align: left;
+    min-height: 5.2em;
+    white-space: pre-wrap;
+}
+
+.pv-review__photo {
+    border-radius: 10px;
+    overflow: hidden;
+    aspect-ratio: 16 / 10;
+    background: #f5f5f5;
+}
+
+.pv-review__photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.pv-review__badge {
+    align-self: flex-start;
+    font-size: 10px;
+    font-weight: 700;
+    color: #03c75a;
+    background: rgba(3, 199, 90, 0.1);
+    border: 1px solid rgba(3, 199, 90, 0.22);
+    border-radius: 6px;
+    padding: 3px 7px;
 }
 
 .mcard-list-wrap {
@@ -931,6 +1295,16 @@ body {
 
 .btn-secondary:hover {
     background-color: var(--bg-secondary);
+}
+
+.btn-outline {
+    background-color: transparent;
+    color: var(--primary-color);
+    border: 1px solid var(--primary-color);
+}
+
+.btn-outline:hover {
+    background-color: rgba(71, 167, 245, 0.12);
 }
 
 .btn-success {

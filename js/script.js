@@ -180,8 +180,14 @@ function initializeEventListeners() {
     const navItems = document.querySelectorAll('.nav-item a');
     navItems.forEach(item => {
         item.addEventListener('click', function(e) {
-            e.preventDefault();
+            // 외부 링크·로그아웃 등은 data-tab 없음 → 기본 동작 유지
+            if (this.classList.contains('nav-external-link') || this.classList.contains('nav-group-toggle')) {
+                return;
+            }
             const tabName = this.getAttribute('data-tab');
+            if (!tabName) return;
+
+            e.preventDefault();
             switchTab(tabName);
 
             // 활성 상태 업데이트

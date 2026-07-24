@@ -111,6 +111,12 @@
                         </li>
                     </ul>
                 </li>
+                <li class="nav-item nav-item--external">
+                    <a href="https://jemin-mobile-intro.pages.dev/" target="_blank" rel="noopener noreferrer" class="nav-external-link">
+                        <i class="fas fa-external-link-alt"></i>
+                        <span>사이트 바로가기</span>
+                    </a>
+                </li>
                 <li class="nav-item">
                     <a href="#" onclick="logout(); return false;">
                         <i class="fas fa-sign-out-alt"></i>
@@ -794,6 +800,9 @@
 
                             <div class="mcard-actions">
                                 <button type="button" class="btn btn-secondary" onclick="resetCardContractForm()">취소</button>
+                                <button type="button" class="btn btn-outline" onclick="openCardPreview('contract')">
+                                    <i class="fas fa-eye"></i> 미리보기
+                                </button>
                                 <button type="button" class="btn btn-primary btn-lg" id="cardContractSaveBtn" onclick="saveCardContract()">
                                     <i class="fas fa-check"></i> 저장하기
                                 </button>
@@ -877,6 +886,9 @@
 
                             <div class="mcard-actions">
                                 <button type="button" class="btn btn-secondary" onclick="resetCardRecommendForm()">취소</button>
+                                <button type="button" class="btn btn-outline" onclick="openCardPreview('recommend')">
+                                    <i class="fas fa-eye"></i> 미리보기
+                                </button>
                                 <button type="button" class="btn btn-primary btn-lg" id="cardRecommendSaveBtn" onclick="saveCardRecommend()">
                                     <i class="fas fa-check"></i> 저장하기
                                 </button>
@@ -962,6 +974,9 @@
 
                             <div class="mcard-actions">
                                 <button type="button" class="btn btn-secondary" onclick="resetCardReviewForm()">취소</button>
+                                <button type="button" class="btn btn-outline" onclick="openCardPreview('review')">
+                                    <i class="fas fa-eye"></i> 미리보기
+                                </button>
                                 <button type="button" class="btn btn-primary btn-lg" id="cardReviewSaveBtn" onclick="saveCardReview()">
                                     <i class="fas fa-check"></i> 저장하기
                                 </button>
@@ -982,6 +997,39 @@
             </div>
         </section>
     </main>
+
+    <!-- 모바일 명함 카드 미리보기 -->
+    <div class="modal" id="cardPreviewModal" role="dialog" aria-modal="true" aria-labelledby="cardPreviewTitle">
+        <div class="modal-content card-preview-modal">
+            <div class="modal-header">
+                <h3 id="cardPreviewTitle">카드 미리보기</h3>
+                <button type="button" class="modal-close" onclick="closeCardPreview()" aria-label="닫기">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p class="card-preview-hint">
+                    <i class="fas fa-mobile-alt"></i>
+                    모바일 명함에 이렇게 보여집니다 · 저장 전 확인용
+                </p>
+                <div class="card-preview-phone">
+                    <div class="card-preview-phone__notch" aria-hidden="true"></div>
+                    <div class="card-preview-stage" id="cardPreviewStage"></div>
+                </div>
+            </div>
+            <div class="modal-footer card-preview-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeCardPreview()">닫기</button>
+                <a
+                    class="btn btn-outline"
+                    href="https://jemin-mobile-intro.pages.dev/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                >
+                    <i class="fas fa-external-link-alt"></i> 실제 사이트 열기
+                </a>
+            </div>
+        </div>
+    </div>
 
     <!-- 비밀번호 변경 모달 (jemin 전용, 매물 모달과 동일 구조) -->
     <div class="modal" id="changePasswordModal">
